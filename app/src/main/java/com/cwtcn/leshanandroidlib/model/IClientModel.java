@@ -7,6 +7,6 @@ package com.cwtcn.leshanandroidlib.model;
 public interface IClientModel {
     void register();
     void destroy();
-    void updateLocation();
-    void updateTemperature();
+    void updateResource(int objectId, ResourceBean bean, String newValue);
+    boolean isClientStarted();
 }

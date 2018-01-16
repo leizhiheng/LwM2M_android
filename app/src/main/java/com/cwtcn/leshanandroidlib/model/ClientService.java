@@ -47,19 +47,6 @@ public class ClientService extends Service implements IClientModel{
     private final static String DEFAULT_ENDPOINT = "LeshanClientDemo";
     private final static String USAGE = "java -jar leshan-client-demo.jar [OPTION]";
 
-    public static final int REQUEST_RESULT_BOOTSTRAP_SUCCESS = 1;
-    public static final int REQUEST_RESULT_BOOTSTRAP_FAILURE = 2;
-    public static final int REQUEST_RESULT_BOOTSTRAP_TIMEOUT = 3;
-    public static final int REQUEST_RESULT_REGISTRATION_SUCCESS = 4;
-    public static final int REQUEST_RESULT_REGISTRATION_FAILURE = 5;
-    public static final int REQUEST_RESULT_REGISTRATION_TIMEOUT = 6;
-    public static final int REQUEST_RESULT_UPDATE_SUCCESS = 7;
-    public static final int REQUEST_RESULT_UPDATE_FAILURE = 8;
-    public static final int REQUEST_RESULT_UPDATE_TIMEOUT = 9;
-    public static final int REQUEST_RESULT_DEREGISTRATION_SUCCUSS = 10;
-    public static final int REQUEST_RESULT_DEREGISTRATION_FAILURE = 11;
-    public static final int REQUEST_RESULT_DEREGISTRATION_TIMEOUT = 12;
-
     private Context mContext;
     private MyLocation locationInstance;
     private LeshanClient mClient;
@@ -80,22 +67,34 @@ public class ClientService extends Service implements IClientModel{
 
     @Override
     public void register() {
-        
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                checkParams();
+            }
+        }).start();
     }
 
     @Override
     public void destroy() {
-
+        new StopClientTask().execute();
     }
 
     @Override
-    public void updateLocation() {
-
+    public void updateResource(int objectId, ResourceBean bean, String newValue) {
+        switch (objectId) {
+            case LOCATION:
+                mLocation.updateLocation(bean.id, Float.valueOf(newValue));
+                break;
+            case OBJECT_ID_TEMPERATURE_SENSOR:
+                mTemperature.adjustTemperature(Double.valueOf(newValue));
+                break;
+        }
     }
 
     @Override
-    public void updateTemperature() {
-
+    public boolean isClientStarted() {
+        return mClient != null;
     }
 
     public class LeshanBinder extends Binder {
@@ -104,16 +103,7 @@ public class ClientService extends Service implements IClientModel{
         }
     }
 
-    public void startClient() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                main();
-            }
-        }).start();
-    }
-
-    public void main() {
+    public void checkParams() {
 
         /**---------------------本地服务器设置----------------*/
         String endpoint;
@@ -243,10 +233,6 @@ public class ClientService extends Service implements IClientModel{
         mClient.start();
     }
 
-    public boolean isClientStarted() {
-        return mClient != null;
-    }
-
     /**
      * 用于测试读取califonium.properties文件是否成功
      * @param inputStream
@@ -265,13 +251,6 @@ public class ClientService extends Service implements IClientModel{
             e.printStackTrace();
         }
     }
-    /**
-     *  send de-registration request before destroy
-     */
-    public void stopClient() {
-        new StopClientTask().execute();
-
-    }
 
     public void setObserver(LwM2mClientObserver observer) {
         this.mObserver = observer;
@@ -281,23 +260,15 @@ public class ClientService extends Service implements IClientModel{
         mContext = context;
     }
 
-    public void updateResource(int objectId, ResourceBean bean, String newValue) {
-        switch (objectId) {
-            case LOCATION:
-                mLocation.updateLocation(bean.id, Float.valueOf(newValue));
-                break;
-            case OBJECT_ID_TEMPERATURE_SENSOR:
-                mTemperature.adjustTemperature(Double.valueOf(newValue));
-                break;
-        }
-    }
-
     class StopClientTask extends AsyncTask<Void, Void, Void> {
 
 
         @Override
         protected Void doInBackground(Void... params) {
-            if (mClient != null) mClient.destroy(true);
+            if (mClient != null) {
+                mClient.destroy(true);
+                mClient = null;
+            }
             return null;
         }
     }

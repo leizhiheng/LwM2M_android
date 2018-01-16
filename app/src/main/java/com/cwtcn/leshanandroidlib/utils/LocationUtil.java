@@ -56,7 +56,7 @@ public class LocationUtil {
             return;
         }
         Location location = mgr.getLastKnownLocation("gps");
-        while(location  == null) {
+        if(location  == null) {
             DebugLog.d("updateLocation...");
             mgr.requestLocationUpdates("gps", 60000, 1, listener);
         }

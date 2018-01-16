@@ -12,4 +12,5 @@ public interface IMainView {
     void hideProgress();
     void updateLocation();
     void updateTemperature();
+    void showToast(String msg);
 }
