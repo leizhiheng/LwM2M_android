@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:context="com.cwtcn.leshanandroidlib.MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <Button
+                android:id="@+id/start_button"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Start Client" />
+
+            <Button
+                android:id="@+id/stop_button"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:layout_marginLeft="10dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Stop Client" />
+        </LinearLayout>
+        <TextView
+            android:id="@+id/client_status"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:padding="10dp"
+            android:gravity="center"
+            android:textSize="@dimen/text_size_content"/>
+
+        <include layout="@layout/line"/>
+
+        <!-- about Device Resource-->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:text="Device's Resources"
+            android:textSize="@dimen/text_size_title"/>
+        <com.cwtcn.leshanandroidlib.widget.ListviewForScrollview
+            android:id="@+id/resource_list_device"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"/>
+
+        <include layout="@layout/line"/>
+        <!-- about Location Resource-->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:text="Location's Resource"
+            android:textSize="@dimen/text_size_title"/>
+        <com.cwtcn.leshanandroidlib.widget.ListviewForScrollview
+            android:id="@+id/resource_list_location"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"/>
+
+        <include layout="@layout/line"/>
+        <!-- about TemperatureSensor Resource-->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:text="TemperatureSensor's resources"
+            android:textSize="@dimen/text_size_title"/>
+        <com.cwtcn.leshanandroidlib.widget.ListviewForScrollview
+            android:id="@+id/resource_list_temperature"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"/>
+    </LinearLayout>
+</ScrollView>

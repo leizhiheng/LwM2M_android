@@ -1,0 +1,479 @@
+<!--
+
+Copyright (c) 2013-2015 Sierra Wireless and others.
+
+All rights reserved. This program and the accompanying materials
+are made available under the terms of the Eclipse Public License v1.0
+and Eclipse Distribution License v1.0 which accompany this distribution.
+
+The Eclipse Public License is available at
+   http://www.eclipse.org/legal/epl-v10.html
+and the Eclipse Distribution License is available at
+   http://www.eclipse.org/org/documents/edl-v10.html.
+
+Contributors:
+    Sierra Wireless - initial API and implementation
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.eclipse.leshan</groupId>
+    <artifactId>leshan</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>leshan</name>
+    <url>http://eclipse.org/leshan</url>
+    <description>An OMA Lightweight M2M (LWM2M) implementation in Java</description>
+    <licenses>
+        <license>
+            <name>Eclipse Public License (EPL), Version 1.0</name>
+            <url>http://www.eclipse.org/legal/epl-v10.html</url>
+            <distribution>repo</distribution>
+        </license>
+        <license>
+            <name>Eclipse Distribution License (EDL), Version 1.0</name>
+            <url>http://www.eclipse.org/org/documents/edl-v10.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <modules>
+        <!-- add for android. leizhiheng -->
+        <module>app</module>
+        <!-- add for android. leizhiheng -->
+
+        <!-- <module>leshan-core</module>
+        <module>leshan-core-cf</module>
+        <module>leshan-server-core</module>
+        <module>leshan-server-cf</module>
+        <module>leshan-server-cluster</module>
+        <module>leshan-client-core</module>
+        <module>leshan-client-cf</module>
+
+        <module>leshan-integration-tests</module>
+
+        <module>leshan-server-demo</module>
+        <module>leshan-client-demo</module>
+        <module>leshan-bsserver-demo</module>-->
+    </modules>
+
+    <scm>
+        <developerConnection>scm:git:ssh://git@github.com/eclipse/leshan.git</developerConnection>
+        <url>https://github.com/eclipse/leshan.git</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>jvermillard</id>
+            <name>Julien Vermillard</name>
+            <email>jvermillard@sierrawireless.com</email>
+            <organization>Sierra Wireless - AirVantage</organization>
+            <organizationUrl>http://airvantage.net</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>msangoi</id>
+            <name>Manuel Sangoi</name>
+            <email>msangoi@sierrawireless.com</email>
+            <organization>Sierra Wireless - AirVantage</organization>
+            <organizationUrl>http://airvantage.net</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>khudalla</id>
+            <name>Kai Hudalla</name>
+            <email>kai.hudalla@bosch-si.com</email>
+            <organization>Bosch Software Innovations GmbH</organization>
+            <organizationUrl>http://www.bosch-si.com</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>sbernard</id>
+            <name>Simon Bernard</name>
+            <email>sbernard@sierrawireless.com</email>
+            <organization>Sierra Wireless</organization>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <properties>
+        <!-- add for android. leizhiheng -->
+        <android.maven.plugin.version>4.4.3</android.maven.plugin.version>
+        <compiler.version>3.1</compiler.version>
+        <javadoc.version>2.9.1</javadoc.version>
+        <android.sdk.path>E:/SoftInstall/Android/sdk</android.sdk.path>
+        <android.sdk.version>23</android.sdk.version>
+        <!-- add for android. leizhiheng -->
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <californium.version>2.0.0-M5</californium.version>
+        <log4j.version>2.1</log4j.version>
+        <slf4j.api.version>1.7.10</slf4j.api.version>
+        <jetty.version>9.1.4.v20140401</jetty.version>
+        <test.exclusion.pattern>**/Redis*.java</test.exclusion.pattern>
+    </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <profiles>
+        <profile>
+            <!-- This profile build the all in one jar -->
+            <id>all</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>leshan-all</module>
+            </modules>
+        </profile>
+        <profile>
+          <id>redis</id>
+          <properties>
+                <test.exclusion.pattern>nothing</test.exclusion.pattern>
+          </properties>
+        </profile>
+        <profile>
+            <!-- this profile generate all the needed artifact and signatures needed, then release it on maven central -->
+            <id>release</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- add for android. leizhiheng -->
+                    <plugin>
+                        <groupId>com.jayway.maven.plugins.android.generation2</groupId>
+                        <artifactId>android-maven-plugin</artifactId>
+                        <version>${android.maven.plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <failOnNonStandardStructure>false</failOnNonStandardStructure>
+                            <sdk>
+                                <path>${android.sdk.path}</path>
+                                <platform>${android.sdk.version}</platform>
+                            </sdk>
+                        </configuration>
+                    </plugin>
+                    <!-- add for android. leizhiheng -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.7</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                            <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <defaultGoal>compile</defaultGoal>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.3</version>
+                    <configuration>
+                        <encoding>UTF-8</encoding>
+                        <source>1.7</source>
+                        <target>1.7</target>
+                        <debug>true</debug>
+                        <optimize>true</optimize>
+                        <showDeprecations>true</showDeprecations>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.19</version>
+                    <configuration>
+                        <parallel>classes</parallel>
+                        <threadCount>4</threadCount>
+                        <excludes>
+                            <exclude>**/*$*</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.6</version>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                                <Implementation-Version>${project.version}</Implementation-Version>
+                            </manifestEntries>
+                        </archive>
+                        <excludes>
+                            <exclude>**/*.zip</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.10.3</version>
+                    <configuration>
+                        <excludePackageNames>org.eclipse.leshan.util</excludePackageNames>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-eclipse-plugin</artifactId>
+                    <configuration>
+                        <downloadSources>true</downloadSources>
+                        <downloadJavadocs>false</downloadJavadocs>
+                        <additionalConfig>
+                            <file>
+                                <name>.settings/org.eclipse.jdt.core.prefs</name>
+                                <location>${basedir}/../eclipse/settings/org.eclipse.jdt.core.prefs</location>
+                            </file>
+                            <file>
+                                <name>.settings/org.eclipse.core.resources.prefs</name>
+                                <location>${basedir}/../eclipse/settings/org.eclipse.core.resources.prefs</location>
+                            </file>
+                            <file>
+                                <name>.settings/org.eclipse.core.runtime.prefs</name>
+                                <location>${basedir}/../eclipse/settings/org.eclipse.core.runtime.prefs</location>
+                            </file>
+                            <file>
+                                <name>.settings/org.eclipse.jdt.ui.prefs</name>
+                                <location>${basedir}/../eclipse/settings/org.eclipse.jdt.ui.prefs</location>
+                            </file>
+                        </additionalConfig>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>3.0.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>buildnumber-maven-plugin</artifactId>
+                    <version>1.4</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>create</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- add for android. leizhiheng -->
+            <dependency>
+                <groupId>android</groupId>
+                <artifactId>android</artifactId>
+                <version>6.0_r3</version>
+                <scope>provided</scope>
+            </dependency>
+            <!-- add for android. leizhiheng -->
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>leshan-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>leshan-core-cf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>leshan-server-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>leshan-client-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>leshan-bs-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>leshan-server-cf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>leshan-server-cluster</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>leshan-client-cf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.californium</groupId>
+                <artifactId>californium-core</artifactId>
+                <version>${californium.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.californium</groupId>
+                <artifactId>scandium</artifactId>
+                <version>${californium.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>2.2.4</version>
+            </dependency>
+            <dependency>
+                <groupId>com.eclipsesource.minimal-json</groupId>
+                <artifactId>minimal-json</artifactId>
+                <version>0.9.4</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.4</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-cli</groupId>
+                <artifactId>commons-cli</artifactId>
+                <version>1.3.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-continuation</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <!-- test dependencies -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.11</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
+                <version>${log4j.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>1.9.5</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
