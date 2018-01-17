@@ -57,7 +57,7 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
             mView.hideProgress();
             int what = msg.what;
             Bundle data = msg.getData();
-            mView.showToast("Requst result code : " + what);
+
             switch (what) {
                 case ServerConfig.REQUEST_RESULT_BOOTSTRAP_SUCCESS:
                     break;
@@ -69,6 +69,9 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
                     mView.updateClientStatus(true, data.getString("registrationId"));
                     break;
                 case ServerConfig.REQUEST_RESULT_REGISTRATION_FAILURE:
+                    String responseCode = data.getString("responseCode");
+                    String responseName = data.getString("responseName");
+                    mView.showToast("Requst result code: " + what + ", responseCode:" + responseCode + ", responseName:" + responseName);
                     break;
                 case ServerConfig.REQUEST_RESULT_REGISTRATION_TIMEOUT:
                     break;
@@ -112,7 +115,6 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
     private void stopService() {
         Intent intent = new Intent(mContext, ClientService.class);
         mContext.stopService(intent);
-        mContext.unbindService(mConn);
     }
 
     @Override
@@ -132,7 +134,7 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
 
     @Override
     public void destroy() {
-        if (mModel != null) {
+        if (mModel != null && mModel.isClientStarted()) {
             mModel.destroy();
             mView.showProgress();
             stopService();
@@ -194,7 +196,10 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
 
     @Override
     public void onRegistrationFailure(DmServerInfo dmServerInfo, ResponseCode responseCode, String s) {
-        sendMessage(ServerConfig.REQUEST_RESULT_REGISTRATION_FAILURE, null);
+        Bundle bundle = new Bundle();
+        bundle.putString("responseCode", responseCode.getCode() + "");
+        bundle.putString("responseName", responseCode.getName() + "");
+        sendMessage(ServerConfig.REQUEST_RESULT_REGISTRATION_FAILURE, bundle);
     }
 
     @Override

@@ -6,6 +6,10 @@ package com.cwtcn.leshanandroidlib.constant;
 
 public class ServerConfig {
     /**Server 配置信息*/
+    public static final String END_POINT = "18010902WithPsk";//一定要用这个endpoint name,否则会被服务器禁止连接
+    public static final String SERVER_URI = "coap://baok180901-00.westeurope.cloudapp.azure.com:5684";
+    public static final String PSK_IDENTITY = "18010901id";
+    public static final String PSK_KEY = "38383838";
 
 
     /**Client与Server通信结果码*/

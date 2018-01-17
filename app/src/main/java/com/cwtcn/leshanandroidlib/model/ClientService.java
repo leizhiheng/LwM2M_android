@@ -7,6 +7,7 @@ import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
 
+import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.resources.IlluminanceSensor;
 import com.cwtcn.leshanandroidlib.resources.MyDevice;
 import com.cwtcn.leshanandroidlib.resources.MyLocation;
@@ -24,6 +25,7 @@ import org.eclipse.leshan.core.model.LwM2mModel;
 import org.eclipse.leshan.core.model.ObjectLoader;
 import org.eclipse.leshan.core.model.ObjectModel;
 import org.eclipse.leshan.core.request.BindingMode;
+import org.eclipse.leshan.util.Hex;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -106,41 +108,14 @@ public class ClientService extends Service implements IClientModel{
     public void checkParams() {
 
         /**---------------------本地服务器设置----------------*/
-        String endpoint;
-        endpoint = "Phone-Blue-Client";
-
-        // Get server URI
-        String serverURI;
-        serverURI = "coap://10.0.2.2:5484"; //+ LwM2m.DEFAULT_COAP_PORT;
-
-        // get security info
-        byte[] pskIdentity = null;
-        byte[] pskKey = null;
-
-        // get local address
-        String localAddress = null;
-        int localPort = 0;
-
-        // get secure local address
-        String secureLocalAddress = null;
-        int secureLocalPort = 0;
-
-        Float latitude = null;
-        Float longitude = null;
-        Float scaleFactor = 1.0f;
-
-        /**--------------爱立信服务器设置-------------*/
-//        String endpoint;
-//        //endpoint = InetAddress.getLocalHost().getHostName();
-//        endpoint = "18010902WithPsk";
+//        String endpoint = "Phone-Blue-Client";
 //
 //        // Get server URI
-//        String serverURI;
-//        serverURI = "coap://baok180901-00.westeurope.cloudapp.azure.com:5684"; //+ LwM2m.DEFAULT_COAP_PORT;
+//        String serverURI  = "coap://10.0.2.2:5484"; //+ LwM2m.DEFAULT_COAP_PORT;
 //
 //        // get security info
-//        byte[] pskIdentity = "18010901id".getBytes();
-//        byte[] pskKey = Hex.decodeHex("38383838".toCharArray());
+//        byte[] pskIdentity = null;
+//        byte[] pskKey = null;
 //
 //        // get local address
 //        String localAddress = null;
@@ -153,6 +128,28 @@ public class ClientService extends Service implements IClientModel{
 //        Float latitude = null;
 //        Float longitude = null;
 //        Float scaleFactor = 1.0f;
+
+        /**--------------爱立信服务器设置-------------*/
+        String endpoint = ServerConfig.END_POINT;
+
+        // Get server URI
+        String serverURI = ServerConfig.SERVER_URI;
+
+        // get security info
+        byte[] pskIdentity = ServerConfig.PSK_IDENTITY.getBytes();
+        byte[] pskKey = Hex.decodeHex(ServerConfig.PSK_KEY.toCharArray());
+
+        // get local address
+        String localAddress = null;
+        int localPort = 0;
+
+        // get secure local address
+        String secureLocalAddress = null;
+        int secureLocalPort = 0;
+
+        Float latitude = null;
+        Float longitude = null;
+        Float scaleFactor = 1.0f;
 
         createAndStartClient(endpoint, localAddress, localPort, secureLocalAddress, secureLocalPort, false,
                 serverURI, pskIdentity, pskKey, latitude, longitude, scaleFactor);
