@@ -5,8 +5,9 @@ package com.cwtcn.leshanandroidlib.presenter;
  */
 
 public interface IMainPresenter {
-    void register();
+    void register(int serverId);
     void destroy();
     void updateLocation();
     void updateTemperature();
+    void unbindService();
 }

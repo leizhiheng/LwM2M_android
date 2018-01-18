@@ -1,8 +1,14 @@
 package com.cwtcn.leshanandroidlib.resources;
 
+import android.os.Debug;
+
+import com.cwtcn.leshanandroidlib.utils.DebugLog;
+
 import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
+import org.eclipse.leshan.core.node.LwM2mResource;
 import org.eclipse.leshan.core.response.ExecuteResponse;
 import org.eclipse.leshan.core.response.ReadResponse;
+import org.eclipse.leshan.core.response.WriteResponse;
 import org.eclipse.leshan.util.NamedThreadFactory;
 
 import java.math.BigDecimal;
@@ -12,7 +18,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class RandomTemperatureSensor extends BaseInstanceEnabler {
+public class RandomTemperatureSensor extends ExtendBaseInstanceEnabler {
 
     public static final String UNIT_CELSIUS = "cel";
     public static final int SENSOR_VALUE = 5700;
@@ -51,6 +57,12 @@ public class RandomTemperatureSensor extends BaseInstanceEnabler {
         default:
             return super.read(resourceId);
         }
+    }
+
+    @Override
+    public WriteResponse write(int resourceid, LwM2mResource value) {
+        DebugLog.d("Write.resourceId = " + resourceid + ", value = " + value.toString());
+        return super.write(resourceid, value);
     }
 
     @Override

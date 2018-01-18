@@ -1,18 +1,30 @@
 package com.cwtcn.leshanandroidlib.resources;
 
+import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
+import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
 
+import org.eclipse.leshan.client.object.Server;
 import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
+import org.eclipse.leshan.core.node.LwM2mResource;
+import org.eclipse.leshan.core.response.ObserveResponse;
 import org.eclipse.leshan.core.response.ReadResponse;
+import org.eclipse.leshan.core.response.WriteResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Observable;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
-public class MyLocation extends BaseInstanceEnabler {
+public class MyLocation extends ExtendBaseInstanceEnabler {
 
     private static final Logger LOG = LoggerFactory.getLogger(MyLocation.class);
 
@@ -22,6 +34,11 @@ public class MyLocation extends BaseInstanceEnabler {
     private float longitude;
     private float scaleFactor;
     private Date timestamp;
+    private Context mContext;
+    private Map<Integer, Long> observedResource = new HashMap<Integer, Long>();
+    public void setContext(Context context) {
+        this.mContext = context;
+    }
 
     public MyLocation() {
         this(null, null, 1.0f);
@@ -58,6 +75,62 @@ public class MyLocation extends BaseInstanceEnabler {
         }
     }
 
+    @Override
+    public WriteResponse write(int resourceid, LwM2mResource value) {
+        DebugLog.d("MyLocation.write resource id  = " + resourceid + ", value = " + value.toString());
+        return WriteResponse.success();
+    }
+
+//    @Override
+//    public void notifyObserve(int resourceId) {
+//        observedResource.put(resourceId, mSecs);
+//        if (mTimer == null) {
+//            startTime();
+//        }
+//        DebugLog.d("MyLocation.notifyObserve resourceId = " + resourceId);
+//    }
+
+    private Timer mTimer;
+    private long mSecs = 0;
+    private void startTime() {
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                mSecs++;
+                notifyResource(mSecs);
+            }
+        }, 1000, 1000);
+    }
+
+    private void notifyResource(long secs) {
+        for (int resourceid : observedResource.keySet()) {
+            if (ServerConfig.MIN_PERIOD < secs - observedResource.get(resourceid)
+                    && secs - observedResource.get(resourceid) < ServerConfig.MAX_PERIOD) {
+                observedResource.put(resourceid, secs);
+                switch (resourceid) {
+                    case 0:
+                        latitude += 1;
+                        break;
+                    case 1:
+                        longitude += 1;
+                        break;
+                    case 5:
+                        timestamp = new Date();
+                        break;
+                }
+                fireResourcesChange(resourceid);
+            }
+        }
+    }
+
+    public void stopTimer() {
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
+    }
+
     public void moveLocation(String nextMove) {
         switch (nextMove.charAt(0)) {
             case 'w':
@@ -73,10 +146,6 @@ public class MyLocation extends BaseInstanceEnabler {
                 moveLongitude(1.0f);
                 break;
         }
-    }
-
-    public void updateLocation() {
-
     }
 
     public void updateLocation(int resourceId, float newValue) {
@@ -96,6 +165,9 @@ public class MyLocation extends BaseInstanceEnabler {
         fireResourcesChange(0, 5);
     }
 
+    private void moveLocation(float delta) {
+
+    }
 
     private void moveLongitude(float delta) {
         longitude = longitude + delta * scaleFactor;
@@ -104,16 +176,19 @@ public class MyLocation extends BaseInstanceEnabler {
     }
 
     public float getLatitude() {
+        latitude += 1;
         DebugLog.d("MyLocation.getLatitude==> latitude:" + latitude);
         return latitude;
     }
 
     public float getLongitude() {
+        longitude += 1;
         DebugLog.d("MyLocation.getLongitude==> longitude:" + longitude);
         return longitude;
     }
 
     public Date getTimestamp() {
-        return timestamp;
+        //return timestamp;
+        return new Date();
     }
 }

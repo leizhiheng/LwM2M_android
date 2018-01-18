@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.text.TextUtils;
 
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.model.ClientService;
@@ -24,12 +25,14 @@ import org.eclipse.leshan.client.observer.LwM2mClientObserver;
 import org.eclipse.leshan.client.servers.DmServerInfo;
 import org.eclipse.leshan.client.servers.ServerInfo;
 
+import java.util.Random;
+
 import static org.eclipse.leshan.LwM2mId.LOCATION;
 
 /**
  * Created by leizhiheng on 2018/1/16.
  */
-public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
+public class MainPresenter implements IMainPresenter, LwM2mClientObserver {
     private IMainView mView;
     private IClientModel mModel;
     private Context mContext;
@@ -37,12 +40,15 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
     private ServiceConnection mConn = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
+            DebugLog.d("onServiceConnected");
             ClientService.LeshanBinder binder = (ClientService.LeshanBinder) service;
             ClientService ser = ((ClientService.LeshanBinder) service).getService();
             ser.setContext(mContext);
             ser.setObserver(MainPresenter.this);
             mModel = ser;
-            mModel.register();
+            if (!TextUtils.isEmpty(mModel.getRegistrationId())) {
+                mView.updateClientStatus(true, mModel.getRegistrationId());
+            }
         }
 
         @Override
@@ -66,11 +72,14 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
                 case ServerConfig.REQUEST_RESULT_BOOTSTRAP_TIMEOUT:
                     break;
                 case ServerConfig.REQUEST_RESULT_REGISTRATION_SUCCESS:
-                    mView.updateClientStatus(true, data.getString("registrationId"));
+                    String registrationId = data.getString("registrationId");
+                    mView.updateClientStatus(true, registrationId);
+                    mModel.setRegistrationId(registrationId);
                     break;
                 case ServerConfig.REQUEST_RESULT_REGISTRATION_FAILURE:
                     String responseCode = data.getString("responseCode");
                     String responseName = data.getString("responseName");
+                    mModel.setRegistrationId(null);
                     mView.showToast("Requst result code: " + what + ", responseCode:" + responseCode + ", responseName:" + responseName);
                     break;
                 case ServerConfig.REQUEST_RESULT_REGISTRATION_TIMEOUT:
@@ -83,6 +92,7 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
                 case ServerConfig.REQUEST_RESULT_UPDATE_TIMEOUT:
                     break;
                 case ServerConfig.REQUEST_RESULT_DEREGISTRATION_SUCCUSS:
+                    mModel.setRegistrationId(null);
                     mView.updateClientStatus(false, null);
                     break;
                 case ServerConfig.REQUEST_RESULT_DEREGISTRATION_FAILURE:
@@ -97,6 +107,7 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
     public MainPresenter(IMainView view, Context context) {
         this.mView = view;
         mContext = context;
+        startService();
     }
 
 
@@ -114,21 +125,24 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
      */
     private void stopService() {
         Intent intent = new Intent(mContext, ClientService.class);
-        mContext.stopService(intent);
+        //mContext.stopService(intent);
     }
 
+    public void unbindService() {
+        mContext.unbindService(mConn);
+    }
+
+    private int serverId;
+
     @Override
-    public void register() {
-        if (mModel == null) {
-            mView.showProgress();
-            startService();
+    public void register(int serverId) {
+        this.serverId = serverId;
+
+        if (!TextUtils.isEmpty(mModel.getRegistrationId())) {
+            mView.showToast("Client has registered!");
         } else {
-            if (mModel.isClientStarted()) {
-                mView.showToast("The service has not existed !");
-            } else {
-                mView.showProgress();
-                mModel.register();
-            }
+            mView.showProgress();
+            mModel.register(serverId);
         }
     }
 
@@ -137,7 +151,7 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
         if (mModel != null && mModel.isClientStarted()) {
             mModel.destroy();
             mView.showProgress();
-            stopService();
+            //stopService();
         } else {
             mView.showToast("客户端已注销");
         }
@@ -146,18 +160,35 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver{
     @Override
     public void updateLocation() {
         Location loc = LocationUtil.getBestLocation(mContext, null);
+        double latitude = 0.0;//loc.getLatitude();
+        double longitude = 0.0;//loc.getLongitude();
+        boolean isRandom = false;
         if (loc == null) {
-            mView.showToast("Get location failed!");
+            //mView.showToast("Get location failed!");
+            latitude = nextDouble(50.0, 70.0);
+            longitude = nextDouble(-200, -230);
+            isRandom = true;
         } else {
-            mView.showToast("latitude: " + loc.getLatitude() + ", longitude:" + loc.getLongitude());
             DebugLog.d("getLocation==> latitude: " + loc.getLatitude() + ", longitude:" + loc.getLongitude());
-            double latitude = loc.getLatitude();
-            double longitude = loc.getLongitude();
-            ResourceBean latBean = new ResourceBean(0, "Latitude", latitude, ResourceBean.ValueType.DOUBLE);
-            ResourceBean longBean = new ResourceBean(1, "Longitude", longitude, ResourceBean.ValueType.DOUBLE);
-            mModel.updateResource(LOCATION, latBean, String.valueOf(latitude));
-            mModel.updateResource(LOCATION, longBean, String.valueOf(longitude));
+            latitude = loc.getLatitude();
+            longitude = loc.getLongitude();
+            isRandom = true;
         }
+        mView.showToast("latitude: " + latitude + ", longitude:" + longitude + ", isRandom:" + isRandom);
+        ResourceBean latBean = new ResourceBean(0, "Latitude", latitude, ResourceBean.ValueType.DOUBLE);
+        ResourceBean longBean = new ResourceBean(1, "Longitude", longitude, ResourceBean.ValueType.DOUBLE);
+        mModel.updateResource(LOCATION, latBean, String.valueOf(latitude));
+        mModel.updateResource(LOCATION, longBean, String.valueOf(longitude));
+    }
+
+    public double nextDouble(final double min, final double max) {
+        if (max < min) {
+            return 0;
+        }
+        if (min == max) {
+            return min;
+        }
+        return min + ((max - min) * new Random().nextDouble());
     }
 
     @Override

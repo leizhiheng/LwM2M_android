@@ -19,7 +19,7 @@ import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MyDevice extends BaseInstanceEnabler {
+public class MyDevice extends ExtendBaseInstanceEnabler {
 
     private static final Logger LOG = LoggerFactory.getLogger(MyDevice.class);
 
@@ -105,6 +105,7 @@ public class MyDevice extends BaseInstanceEnabler {
             return super.write(resourceid, value);
         }
     }
+
 
     private String getManufacturer() {
         return "Leshan Demo Device";

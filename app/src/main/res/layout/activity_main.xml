@@ -23,26 +23,36 @@
                 android:layout_height="50dp"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:text="Start Client" />
+                android:text="Start Remote Client" />
 
             <Button
-                android:id="@+id/stop_button"
+                android:id="@+id/start_local_button"
                 android:layout_width="wrap_content"
                 android:layout_height="50dp"
                 android:layout_marginLeft="10dp"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:text="Stop Client" />
+                android:text="Start Loc server" />
         </LinearLayout>
+
+        <Button
+            android:id="@+id/stop_button"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginLeft="10dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Stop Client" />
+
         <TextView
             android:id="@+id/client_status"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:padding="10dp"
             android:gravity="center"
-            android:textSize="@dimen/text_size_content"/>
+            android:padding="10dp"
+            android:textSize="@dimen/text_size_content" />
 
-        <include layout="@layout/line"/>
+        <include layout="@layout/line" />
 
         <!-- about Device Resource-->
         <TextView
@@ -50,42 +60,45 @@
             android:layout_height="wrap_content"
             android:padding="10dp"
             android:text="Device's Resources"
-            android:textSize="@dimen/text_size_title"/>
+            android:textSize="@dimen/text_size_title" />
+
         <com.cwtcn.leshanandroidlib.widget.ListviewForScrollview
             android:id="@+id/resource_list_device"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingLeft="10dp"
-            android:paddingRight="10dp"/>
+            android:paddingRight="10dp" />
 
-        <include layout="@layout/line"/>
+        <include layout="@layout/line" />
         <!-- about Location Resource-->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
             android:text="Location's Resource"
-            android:textSize="@dimen/text_size_title"/>
+            android:textSize="@dimen/text_size_title" />
+
         <com.cwtcn.leshanandroidlib.widget.ListviewForScrollview
             android:id="@+id/resource_list_location"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingLeft="10dp"
-            android:paddingRight="10dp"/>
+            android:paddingRight="10dp" />
 
-        <include layout="@layout/line"/>
+        <include layout="@layout/line" />
         <!-- about TemperatureSensor Resource-->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
             android:text="TemperatureSensor's resources"
-            android:textSize="@dimen/text_size_title"/>
+            android:textSize="@dimen/text_size_title" />
+
         <com.cwtcn.leshanandroidlib.widget.ListviewForScrollview
             android:id="@+id/resource_list_temperature"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingLeft="10dp"
-            android:paddingRight="10dp"/>
+            android:paddingRight="10dp" />
     </LinearLayout>
 </ScrollView>

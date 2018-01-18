@@ -55,10 +55,11 @@ public class LocationUtil {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-        Location location = mgr.getLastKnownLocation("gps");
+        Location location = mgr.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         if(location  == null) {
             DebugLog.d("updateLocation...");
-            mgr.requestLocationUpdates("gps", 60000, 1, listener);
+            mgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, 3000, 1, listener);
+            location = mgr.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         }
     }
 
@@ -97,6 +98,21 @@ public class LocationUtil {
         return location;
     }
 
+    public static Location getPassiveLocation(Context context) {
+        DebugLog.d("getNetworkLocation==>");
+        Location location = null;
+        LocationManager manager = getLocationManager(context);
+        //高版本的权限检查
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return null;
+        }
+        if (manager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) {//是否支持Network定位
+            //获取最后的network定位信息
+            location = manager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+        }
+        return location;
+    }
+
     /**
      * 获取最好的定位方式
      */
@@ -112,7 +128,7 @@ public class LocationUtil {
         String provider = manager.getBestProvider(criteria, true);
         if (TextUtils.isEmpty(provider)) {
             //如果找不到最适合的定位，使用network定位
-            location = getNetWorkLocation(context);
+            location = getPassiveLocation(context);
         } else {
             //高版本的权限检查
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED

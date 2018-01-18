@@ -37,7 +37,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
     public static final String TAG = "MainActivity";
 
     private static final int PERMISSIONS_REQUEST_LOCATION = 1;
-    private Button mStartButton, mStopButton;
+    private Button mStartButton, mStartLoc, mStopButton;
     private ListView mListDevice, mListLocation, mListTemperature;
     private TextView mClientStatus;
     private AlertDialog mProgressDialog;
@@ -75,9 +75,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
 
     private void initView() {
         mStartButton = (Button) findViewById(R.id.start_button);
+        mStartLoc = findViewById(R.id.start_local_button);
         mStopButton = (Button) findViewById(R.id.stop_button);
         mStartButton.setOnClickListener(this);
         mStopButton.setOnClickListener(this);
+        mStartLoc.setOnClickListener(this);
+        mStartLoc.setVisibility(View.GONE);
 
         mListDevice = findViewById(R.id.resource_list_device);
         mListDevice.setVisibility(View.GONE);
@@ -98,7 +101,10 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         switch (v.getId()) {
             case R.id.start_button:
                 //注册到服务器
-                register();
+                register(1);
+                break;
+            case R.id.start_local_button:
+                register(0);
                 break;
             case R.id.stop_button:
                 //注销客户端
@@ -147,6 +153,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mPresenter.unbindService();
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         DebugLog.d("onRequestPermissionsResult ==>");
@@ -160,8 +172,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
     }
 
     @Override
-    public void register() {
-        mPresenter.register();
+    public void register(int serverId) {
+        mPresenter.register(serverId);
     }
 
     @Override

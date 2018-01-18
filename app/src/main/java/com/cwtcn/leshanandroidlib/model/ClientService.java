@@ -6,8 +6,11 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.annotation.IntDef;
 
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
+import com.cwtcn.leshanandroidlib.resources.AddressableTextDisplay;
+import com.cwtcn.leshanandroidlib.resources.ExtendBaseInstanceEnabler;
 import com.cwtcn.leshanandroidlib.resources.IlluminanceSensor;
 import com.cwtcn.leshanandroidlib.resources.MyDevice;
 import com.cwtcn.leshanandroidlib.resources.MyLocation;
@@ -19,6 +22,7 @@ import org.eclipse.leshan.client.californium.LeshanClient;
 import org.eclipse.leshan.client.californium.LeshanClientBuilder;
 import org.eclipse.leshan.client.object.Server;
 import org.eclipse.leshan.client.observer.LwM2mClientObserver;
+import org.eclipse.leshan.client.resource.LwM2mInstanceEnabler;
 import org.eclipse.leshan.client.resource.LwM2mObjectEnabler;
 import org.eclipse.leshan.client.resource.ObjectsInitializer;
 import org.eclipse.leshan.core.model.LwM2mModel;
@@ -31,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Map;
 
 import static org.eclipse.leshan.LwM2mId.DEVICE;
 import static org.eclipse.leshan.LwM2mId.LOCATION;
@@ -41,15 +46,19 @@ import static org.eclipse.leshan.client.object.Security.noSecBootstap;
 import static org.eclipse.leshan.client.object.Security.psk;
 import static org.eclipse.leshan.client.object.Security.pskBootstrap;
 
-public class ClientService extends Service implements IClientModel{
+public class ClientService extends Service implements IClientModel {
     public static final String TAG = "ClientService";
 
-    private final static String[] modelPaths = new String[] { "3301.xml", "3303.xml" };
+    public static final int SERVER_ID_LOCAL = 0;
+    public static final int SERVER_ID_REMOTE = 1;
+
+    private final static String[] modelPaths = new String[]{"3301.xml", "3303.xml", "3341.xml"};
     private static final int OBJECT_ID_TEMPERATURE_SENSOR = 3303;
     private final static String DEFAULT_ENDPOINT = "LeshanClientDemo";
     private final static String USAGE = "java -jar leshan-client-demo.jar [OPTION]";
 
     private Context mContext;
+    private ObjectsInitializer initializer;
     private MyLocation locationInstance;
     private LeshanClient mClient;
     private LwM2mClientObserver mObserver;
@@ -57,118 +66,120 @@ public class ClientService extends Service implements IClientModel{
     private MyLocation mLocation, mLocationTemp;
     private RandomTemperatureSensor mTemperature;
     private IlluminanceSensor mIllumunance;
+    private AddressableTextDisplay mTextDisplay;
+
+    private String mRegistrationId;
+
     @Override
     public void onCreate() {
         super.onCreate();
+        DebugLog.d("ClientService.onCreate ==>");
     }
 
     @Override
     public IBinder onBind(Intent intent) {
+        DebugLog.d("ClientService.onBind ==>");
         return new LeshanBinder();
     }
 
     @Override
-    public void register() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                checkParams();
-            }
-        }).start();
+    public boolean onUnbind(Intent intent) {
+        DebugLog.d("ClientService.onUnbind ==>");
+        return super.onUnbind(intent);
     }
 
     @Override
-    public void destroy() {
-        new StopClientTask().execute();
-    }
-
-    @Override
-    public void updateResource(int objectId, ResourceBean bean, String newValue) {
-        switch (objectId) {
-            case LOCATION:
-                mLocation.updateLocation(bean.id, Float.valueOf(newValue));
-                break;
-            case OBJECT_ID_TEMPERATURE_SENSOR:
-                mTemperature.adjustTemperature(Double.valueOf(newValue));
-                break;
-        }
-    }
-
-    @Override
-    public boolean isClientStarted() {
-        return mClient != null;
+    public void onDestroy() {
+        DebugLog.d("ClientService.onDestroy ==>");
+        super.onDestroy();
     }
 
     public class LeshanBinder extends Binder {
         public ClientService getService() {
-            return new ClientService();
+            return ClientService.this;
         }
     }
 
-    public void checkParams() {
+    @Override
+    public void register(final int serverId) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                checkParams(serverId);
+            }
+        }).start();
+    }
 
+    public void checkParams(int serverId) {
         /**---------------------本地服务器设置----------------*/
-//        String endpoint = "Phone-Blue-Client";
+//        if (serverId == SERVER_ID_LOCAL) {
+            String endpoint = "Phone-Blue-Client";
+
+            // Get server URI
+            String serverURI = "coap://10.0.2.2:5484"; //+ LwM2m.DEFAULT_COAP_PORT;
+
+            // get security info
+            byte[] pskIdentity = null;
+            byte[] pskKey = null;
+
+            // get local address
+            String localAddress = null;
+            int localPort = 0;
+
+            // get secure local address
+            String secureLocalAddress = null;
+            int secureLocalPort = 0;
+
+            Float latitude = null;
+            Float longitude = null;
+            Float scaleFactor = 1.0f;
 //
-//        // Get server URI
-//        String serverURI  = "coap://10.0.2.2:5484"; //+ LwM2m.DEFAULT_COAP_PORT;
+//            createAndStartClient(endpoint, localAddress, localPort, secureLocalAddress, secureLocalPort, false,
+//                    serverURI, pskIdentity, pskKey, latitude, longitude, scaleFactor);
+//        } else if (serverId == SERVER_ID_REMOTE) {
+
+            /**--------------爱立信服务器设置-------------*/
+//            String endpoint = ServerConfig.END_POINT;
 //
-//        // get security info
-//        byte[] pskIdentity = null;
-//        byte[] pskKey = null;
+//            // Get server URI
+//            String serverURI = ServerConfig.SERVER_URI;
 //
-//        // get local address
-//        String localAddress = null;
-//        int localPort = 0;
+//            // get security info
+//            byte[] pskIdentity = ServerConfig.PSK_IDENTITY.getBytes();
+//            byte[] pskKey = Hex.decodeHex(ServerConfig.PSK_KEY.toCharArray());
 //
-//        // get secure local address
-//        String secureLocalAddress = null;
-//        int secureLocalPort = 0;
+//            // get local address
+//            String localAddress = null;
+//            int localPort = 0;
 //
-//        Float latitude = null;
-//        Float longitude = null;
-//        Float scaleFactor = 1.0f;
-
-        /**--------------爱立信服务器设置-------------*/
-        String endpoint = ServerConfig.END_POINT;
-
-        // Get server URI
-        String serverURI = ServerConfig.SERVER_URI;
-
-        // get security info
-        byte[] pskIdentity = ServerConfig.PSK_IDENTITY.getBytes();
-        byte[] pskKey = Hex.decodeHex(ServerConfig.PSK_KEY.toCharArray());
-
-        // get local address
-        String localAddress = null;
-        int localPort = 0;
-
-        // get secure local address
-        String secureLocalAddress = null;
-        int secureLocalPort = 0;
-
-        Float latitude = null;
-        Float longitude = null;
-        Float scaleFactor = 1.0f;
-
-        createAndStartClient(endpoint, localAddress, localPort, secureLocalAddress, secureLocalPort, false,
-                serverURI, pskIdentity, pskKey, latitude, longitude, scaleFactor);
+//            // get secure local address
+//            String secureLocalAddress = null;
+//            int secureLocalPort = 0;
+//
+//            Float latitude = null;
+//            Float longitude = null;
+//            Float scaleFactor = 1.0f;
+            createAndStartClient(endpoint, localAddress, localPort, secureLocalAddress, secureLocalPort, false,
+                    serverURI, pskIdentity, pskKey, latitude, longitude, scaleFactor);
+//        }
     }
 
     public void createAndStartClient(String endpoint, String localAddress, int localPort,
                                      String secureLocalAddress, int secureLocalPort, boolean needBootstrap, String serverURI, byte[] pskIdentity,
                                      byte[] pskKey, Float latitude, Float longitude, float scaleFactor) {
         mLocation = new MyLocation(latitude, longitude, scaleFactor);
+        mLocation.setContext(mContext);
         mLocationTemp = new MyLocation(latitude, longitude, scaleFactor);
-        mIllumunance = new IlluminanceSensor();
         mTemperature = new RandomTemperatureSensor();
+        mIllumunance = new IlluminanceSensor();
+        mTextDisplay = new AddressableTextDisplay();
 
         // Initialize model
         List<ObjectModel> models = ObjectLoader.loadDefault();
         models.addAll(ObjectLoader.loadDdfResources("/assets", modelPaths));
 
         // Initialize object list
-        ObjectsInitializer initializer = new ObjectsInitializer(new LwM2mModel(models));
+        initializer = new ObjectsInitializer(new LwM2mModel(models));
         if (needBootstrap) {
             if (pskIdentity == null)
                 initializer.setInstancesForObject(SECURITY, noSecBootstap(serverURI));
@@ -187,9 +198,10 @@ public class ClientService extends Service implements IClientModel{
         //LOCATION属于单实例对象，所以只能设置一个实例，否则报错
         initializer.setInstancesForObject(LOCATION, mLocation/*, mLocationTemp*/);
         initializer.setInstancesForObject(OBJECT_ID_TEMPERATURE_SENSOR, mTemperature);
-        initializer.setInstancesForObject(IlluminanceSensor.OJBECTS_ID_ILLUMINANCE, mIllumunance);
-        List<LwM2mObjectEnabler> enablers = initializer.create(SECURITY, SERVER, DEVICE, LOCATION, IlluminanceSensor.OJBECTS_ID_ILLUMINANCE,
-                OBJECT_ID_TEMPERATURE_SENSOR);
+        initializer.setInstancesForObject(IlluminanceSensor.OBJECT_ID_ILLUMINANCE, mIllumunance);
+        initializer.setInstancesForObject(AddressableTextDisplay.OBJECT_ID_ADDRESSABLE_TEXT_DISPLAY, mTextDisplay);
+        List<LwM2mObjectEnabler> enablers = initializer.create(SECURITY, SERVER, DEVICE, LOCATION, IlluminanceSensor.OBJECT_ID_ILLUMINANCE,
+                AddressableTextDisplay.OBJECT_ID_ADDRESSABLE_TEXT_DISPLAY, OBJECT_ID_TEMPERATURE_SENSOR);
 
         // Create CoAP Config
         NetworkConfig coapConfig = null;
@@ -230,8 +242,80 @@ public class ClientService extends Service implements IClientModel{
         mClient.start();
     }
 
+    @Override
+    public void updateResource(int objectId, ResourceBean bean, String newValue) {
+        switch (objectId) {
+            case LOCATION:
+                mLocation.updateLocation(bean.id, Float.valueOf(newValue));
+                break;
+            case OBJECT_ID_TEMPERATURE_SENSOR:
+                mTemperature.adjustTemperature(Double.valueOf(newValue));
+                break;
+        }
+    }
+
+    public void setObserver(LwM2mClientObserver observer) {
+        this.mObserver = observer;
+    }
+
+    public void setContext(Context context) {
+        mContext = context;
+    }
+
+    @Override
+    public boolean isClientStarted() {
+        return mClient != null;
+    }
+
+    @Override
+    public void setRegistrationId(String registrationId) {
+        this.mRegistrationId = registrationId;
+    }
+
+    @Override
+    public String getRegistrationId() {
+        return mRegistrationId;
+    }
+
+    @Override
+    public void destroy() {
+        mLocation.stopTimer();
+        new StopClientTask().execute();
+    }
+
+    /**
+     * 停止Object的Instance的周期上报线程
+     */
+    private void stopInstanceNotifyThread() {
+        Map<Integer, LwM2mInstanceEnabler[]> instances = initializer.getInstances();
+        for (Integer objectId: instances.keySet()) {
+            LwM2mInstanceEnabler[] enablers = instances.get(objectId);
+            for (LwM2mInstanceEnabler enabler: enablers) {
+//                DebugLog.d("stopInstanceNotifyThread objectId = " + objectId + ", enabler = " + enabler);
+                if (enabler instanceof ExtendBaseInstanceEnabler) {
+                    ExtendBaseInstanceEnabler e = (ExtendBaseInstanceEnabler) enabler;
+                    e.setStartedObseve(false);
+                }
+            }
+        }
+    }
+
+    class StopClientTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... params) {
+            stopInstanceNotifyThread();
+
+            if (mClient != null) {
+                mClient.destroy(true);
+                mClient = null;
+            }
+            return null;
+        }
+    }
+
     /**
      * 用于测试读取califonium.properties文件是否成功
+     *
      * @param inputStream
      */
     private void readProperties(InputStream inputStream) {
@@ -246,27 +330,6 @@ public class ClientService extends Service implements IClientModel{
             DebugLog.d(new String(buf));
         } catch (IOException e) {
             e.printStackTrace();
-        }
-    }
-
-    public void setObserver(LwM2mClientObserver observer) {
-        this.mObserver = observer;
-    }
-
-    public void setContext(Context context) {
-        mContext = context;
-    }
-
-    class StopClientTask extends AsyncTask<Void, Void, Void> {
-
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            if (mClient != null) {
-                mClient.destroy(true);
-                mClient = null;
-            }
-            return null;
         }
     }
 }

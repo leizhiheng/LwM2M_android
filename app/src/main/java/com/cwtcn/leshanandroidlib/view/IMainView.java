@@ -5,7 +5,7 @@ package com.cwtcn.leshanandroidlib.view;
  */
 
 public interface IMainView {
-    void register();
+    void register(int serverId);
     void destroyClient();
     void updateClientStatus(boolean registered, String registrationId);
     void showProgress();

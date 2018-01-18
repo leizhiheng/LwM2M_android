@@ -11,6 +11,10 @@ public class ServerConfig {
     public static final String PSK_IDENTITY = "18010901id";
     public static final String PSK_KEY = "38383838";
 
+    /**服务器observe后，Client notify的时间间隔*/
+    public static final int MIN_PERIOD = 5;
+    public static final int MAX_PERIOD = 30;
+
 
     /**Client与Server通信结果码*/
     public static final int REQUEST_RESULT_BOOTSTRAP_SUCCESS = 1;

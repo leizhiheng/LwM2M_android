@@ -8,6 +8,16 @@
 		<MultipleInstances>Multiple</MultipleInstances>
 		<Mandatory>Optional</Mandatory>
 		<Resources>
+			<Item ID="5527">
+				<Name>Text</Name>
+				<Operations>RW</Operations>
+				<MultipleInstances>Single</MultipleInstances>
+				<Mandatory>Mandatory</Mandatory>
+				<Type>String</Type>
+				<RangeEnumeration></RangeEnumeration>
+				<Units></Units>
+				<Description>A string of text.</Description>
+			</Item>
 			<Item ID="5700">
 				<Name>Sensor Value</Name>
 				<Operations>R</Operations>
@@ -20,7 +30,7 @@
 			</Item>
 			<Item ID="5601">
 				<Name>Min Measured Value</Name>
-				<Operations>R</Operations>
+				<Operations>RW</Operations>
 				<MultipleInstances>Single</MultipleInstances>
 				<Mandatory>Optional</Mandatory>
 				<Type>Float</Type>
