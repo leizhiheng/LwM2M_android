@@ -1,6 +1,7 @@
 package com.cwtcn.leshanandroidlib.resources;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteNotifyPeriodListener;
 
 import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
 import org.eclipse.leshan.core.node.LwM2mResource;
@@ -21,19 +22,23 @@ public class AddressableTextDisplay extends ExtendBaseInstanceEnabler {
 
     public static final int OBJECT_ID_ADDRESSABLE_TEXT_DISPLAY = 3341;
     public static final int TEXT = 5527;
+    public static final int CLEAR_DISPLAY = 5530;
 
     private String mText;
 
-    public AddressableTextDisplay() {
+    private OnWriteNotifyPeriodListener mOnWriteNotifyPeriodListener;
+
+    public void setOnWriteNotifyPeriodListener(OnWriteNotifyPeriodListener listener) {
+        this.mOnWriteNotifyPeriodListener = listener;
     }
 
     @Override
     public synchronized ReadResponse read(int resourceId) {
         switch (resourceId) {
-        case TEXT:
-            return ReadResponse.success(resourceId, mText);
-        default:
-            return super.read(resourceId);
+            case TEXT:
+                return ReadResponse.success(resourceId, mText);
+            default:
+                return super.read(resourceId);
         }
     }
 
@@ -50,10 +55,13 @@ public class AddressableTextDisplay extends ExtendBaseInstanceEnabler {
 
     @Override
     public synchronized ExecuteResponse execute(int resourceId, String params) {
+        DebugLog.d("execute params ==> " + params);
         switch (resourceId) {
-
-        default:
-            return super.execute(resourceId, params);
+            case CLEAR_DISPLAY:
+                DebugLog.d("execute params = " + params);
+                return ExecuteResponse.success() ;
+            default:
+                return super.execute(resourceId, params);
         }
     }
 }

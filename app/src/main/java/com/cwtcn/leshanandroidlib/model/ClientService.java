@@ -3,19 +3,22 @@ package com.cwtcn.leshanandroidlib.model;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
-import android.support.annotation.IntDef;
 
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.resources.AddressableTextDisplay;
 import com.cwtcn.leshanandroidlib.resources.ExtendBaseInstanceEnabler;
+import com.cwtcn.leshanandroidlib.resources.ExtendObjectsInitializer;
 import com.cwtcn.leshanandroidlib.resources.IlluminanceSensor;
 import com.cwtcn.leshanandroidlib.resources.MyDevice;
 import com.cwtcn.leshanandroidlib.resources.MyLocation;
 import com.cwtcn.leshanandroidlib.resources.RandomTemperatureSensor;
+import com.cwtcn.leshanandroidlib.resources.SetPoint;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteNotifyPeriodListener;
 
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.leshan.client.californium.LeshanClient;
@@ -46,13 +49,13 @@ import static org.eclipse.leshan.client.object.Security.noSecBootstap;
 import static org.eclipse.leshan.client.object.Security.psk;
 import static org.eclipse.leshan.client.object.Security.pskBootstrap;
 
-public class ClientService extends Service implements IClientModel {
+public class ClientService extends Service implements IClientModel, OnWriteNotifyPeriodListener {
     public static final String TAG = "ClientService";
 
     public static final int SERVER_ID_LOCAL = 0;
     public static final int SERVER_ID_REMOTE = 1;
 
-    private final static String[] modelPaths = new String[]{"3301.xml", "3303.xml", "3341.xml"};
+    private final static String[] modelPaths = new String[]{"3301.xml", "3303.xml", "3341.xml", "3308.xml"};
     private static final int OBJECT_ID_TEMPERATURE_SENSOR = 3303;
     private final static String DEFAULT_ENDPOINT = "LeshanClientDemo";
     private final static String USAGE = "java -jar leshan-client-demo.jar [OPTION]";
@@ -67,13 +70,17 @@ public class ClientService extends Service implements IClientModel {
     private RandomTemperatureSensor mTemperature;
     private IlluminanceSensor mIllumunance;
     private AddressableTextDisplay mTextDisplay;
+    private SetPoint mSetPoint;
 
     private String mRegistrationId;
+
+    public static SharedPreferences mPreferences;
 
     @Override
     public void onCreate() {
         super.onCreate();
         DebugLog.d("ClientService.onCreate ==>");
+        mPreferences = getSharedPreferences(ServerConfig.NOTIFY_PERIOD_PREFERENCES, Context.MODE_PRIVATE);
     }
 
     @Override
@@ -108,6 +115,11 @@ public class ClientService extends Service implements IClientModel {
                 checkParams(serverId);
             }
         }).start();
+    }
+
+    @Override
+    public void destroy() {
+        new StopClientTask().execute();
     }
 
     public void checkParams(int serverId) {
@@ -173,13 +185,15 @@ public class ClientService extends Service implements IClientModel {
         mTemperature = new RandomTemperatureSensor();
         mIllumunance = new IlluminanceSensor();
         mTextDisplay = new AddressableTextDisplay();
+        mSetPoint = new SetPoint();
+        mSetPoint.setOnWriteNotifyPeriodListener(this);
 
         // Initialize model
         List<ObjectModel> models = ObjectLoader.loadDefault();
         models.addAll(ObjectLoader.loadDdfResources("/assets", modelPaths));
 
         // Initialize object list
-        initializer = new ObjectsInitializer(new LwM2mModel(models));
+        initializer = new ExtendObjectsInitializer(new LwM2mModel(models));
         if (needBootstrap) {
             if (pskIdentity == null)
                 initializer.setInstancesForObject(SECURITY, noSecBootstap(serverURI));
@@ -198,9 +212,10 @@ public class ClientService extends Service implements IClientModel {
         //LOCATION属于单实例对象，所以只能设置一个实例，否则报错
         initializer.setInstancesForObject(LOCATION, mLocation/*, mLocationTemp*/);
         initializer.setInstancesForObject(OBJECT_ID_TEMPERATURE_SENSOR, mTemperature);
-        initializer.setInstancesForObject(IlluminanceSensor.OBJECT_ID_ILLUMINANCE, mIllumunance);
+        //initializer.setInstancesForObject(IlluminanceSensor.OBJECT_ID_ILLUMINANCE, mIllumunance);
         initializer.setInstancesForObject(AddressableTextDisplay.OBJECT_ID_ADDRESSABLE_TEXT_DISPLAY, mTextDisplay);
-        List<LwM2mObjectEnabler> enablers = initializer.create(SECURITY, SERVER, DEVICE, LOCATION, IlluminanceSensor.OBJECT_ID_ILLUMINANCE,
+        initializer.setInstancesForObject(SetPoint.OBJECT_ID_SET_POINT, mSetPoint);
+        List<LwM2mObjectEnabler> enablers = initializer.create(SECURITY, SERVER, DEVICE, LOCATION, SetPoint.OBJECT_ID_SET_POINT,
                 AddressableTextDisplay.OBJECT_ID_ADDRESSABLE_TEXT_DISPLAY, OBJECT_ID_TEMPERATURE_SENSOR);
 
         // Create CoAP Config
@@ -277,10 +292,44 @@ public class ClientService extends Service implements IClientModel {
         return mRegistrationId;
     }
 
+
+    /**
+     * 当服务端传递过来数据上报周期信息时，在这处理
+     * @param objectId
+     * @param period
+     */
     @Override
-    public void destroy() {
-        mLocation.stopTimer();
-        new StopClientTask().execute();
+    public void writedPeriod(int objectId, int period) {
+        Map<Integer, LwM2mInstanceEnabler[]> instances = initializer.getInstances();
+        if (instances.containsKey(objectId)) {
+            //保存period
+            setIntervalInSec(objectId, (int) period);
+            LwM2mInstanceEnabler[] enablers = instances.get(objectId);
+            for (LwM2mInstanceEnabler enabler: enablers) {
+                if (enabler instanceof ExtendBaseInstanceEnabler) {
+                    //将period的值设置给所有Instance,当Server observe这个实例的某个资源后，
+                    // 这个实例会每隔period秒，上报一次resource的值
+                    ((ExtendBaseInstanceEnabler) enabler).setIntervalInSec((int) period);
+                }
+            }
+        }
+
+    }
+
+    @Override
+    public int readPeriod(int objectId) {
+        return getIntervalInSec(objectId);
+    }
+
+    @Override
+    public void setIntervalInSec(int objectId, int period) {
+        mPreferences.edit().putInt(String.valueOf(objectId), period).commit();
+    }
+
+    @Override
+    public int getIntervalInSec(int objectId) {
+        DebugLog.d("getIntervalInSec Thread:" + Thread.currentThread().getId());
+        return mPreferences.getInt(String.valueOf(objectId), -1);
     }
 
     /**

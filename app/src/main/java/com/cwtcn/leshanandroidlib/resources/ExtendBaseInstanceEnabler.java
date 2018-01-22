@@ -1,6 +1,7 @@
 package com.cwtcn.leshanandroidlib.resources;
 
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
+import com.cwtcn.leshanandroidlib.model.ClientService;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
 
 import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
@@ -16,8 +17,9 @@ import java.util.HashMap;
 
 public class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
 
+    private int objectId;
     /*服务器observe后，Notify间隔时间*/
-    private int intervalInSec = 5;
+    private int intervalInSec = -1;
     private boolean startedObseve = false;
     private HashMap<Integer, Long> observedResource;
     @Override
@@ -33,6 +35,7 @@ public class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
     public void notifyObserve(int resourceId) {
         DebugLog.d("notifyObserve resourceId = " + resourceId);
         if (observedResource == null) {
+            intervalInSec = ClientService.mPreferences.getInt(String.valueOf(objectId), -1);
             startedObseve = true;
             observedResource = new HashMap<Integer, Long>();
             startPeriodicNotify();
@@ -40,6 +43,18 @@ public class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
         observedResource.put(resourceId, getNowMilliSecs());
     }
 
+    public void setObjectId(int objectId) {
+        this.objectId = objectId;
+    }
+
+    public int getObjectId() {
+        return this.objectId;
+    }
+
+    public void setIntervalInSec(int intervalInSec) {
+        DebugLog.d("setIntervalInSec intervalInSec = " + intervalInSec);
+        this.intervalInSec = intervalInSec;
+    }
     /**
      * 通过将startedObseve设置为false，来中断startPeriodicNotify()中的循环线程
      * @param startedObseve
@@ -67,7 +82,7 @@ public class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
 
                     long milliSecs = getNowMilliSecs();
                     for (int resourceid : observedResource.keySet()) {
-                        DebugLog.d("startPeriodicNotify resourceid = " + resourceid);
+//                        DebugLog.d("startPeriodicNotify resourceid = " + resourceid);
                         if (intervalInSec * 1000 < milliSecs - observedResource.get(resourceid)) {
                             //如果时间间隔大于minPeriod，则上报数据
                             fireResourcesChange(resourceid);

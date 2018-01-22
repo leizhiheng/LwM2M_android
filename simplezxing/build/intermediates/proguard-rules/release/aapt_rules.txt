@@ -1,0 +1,6 @@
+# view AndroidManifest.xml #generated:18
+-keep class com.acker.simplezxing.activity.CaptureActivity { <init>(...); }
+
+# view res/layout/capture.xml #generated:22
+-keep class com.acker.simplezxing.view.ViewfinderView { <init>(...); }
+

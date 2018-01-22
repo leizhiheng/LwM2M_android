@@ -81,28 +81,6 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
         return WriteResponse.success();
     }
 
-//    @Override
-//    public void notifyObserve(int resourceId) {
-//        observedResource.put(resourceId, mSecs);
-//        if (mTimer == null) {
-//            startTime();
-//        }
-//        DebugLog.d("MyLocation.notifyObserve resourceId = " + resourceId);
-//    }
-
-    private Timer mTimer;
-    private long mSecs = 0;
-    private void startTime() {
-        mTimer = new Timer();
-        mTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                mSecs++;
-                notifyResource(mSecs);
-            }
-        }, 1000, 1000);
-    }
-
     private void notifyResource(long secs) {
         for (int resourceid : observedResource.keySet()) {
             if (ServerConfig.MIN_PERIOD < secs - observedResource.get(resourceid)
@@ -121,13 +99,6 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
                 }
                 fireResourcesChange(resourceid);
             }
-        }
-    }
-
-    public void stopTimer() {
-        if (mTimer != null) {
-            mTimer.cancel();
-            mTimer = null;
         }
     }
 

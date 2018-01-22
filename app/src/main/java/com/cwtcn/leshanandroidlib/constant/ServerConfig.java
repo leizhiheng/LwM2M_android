@@ -5,6 +5,9 @@ package com.cwtcn.leshanandroidlib.constant;
  */
 
 public class ServerConfig {
+
+    public static final String NOTIFY_PERIOD_PREFERENCES = "nofity.period.preferences";
+
     /**Server 配置信息*/
     public static final String END_POINT = "18010902WithPsk";//一定要用这个endpoint name,否则会被服务器禁止连接
     public static final String SERVER_URI = "coap://baok180901-00.westeurope.cloudapp.azure.com:5684";

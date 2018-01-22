@@ -4,8 +4,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -19,12 +19,19 @@ import com.cwtcn.leshanandroidlib.model.ResourceBean;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
 import com.cwtcn.leshanandroidlib.utils.LocationUtil;
 import com.cwtcn.leshanandroidlib.view.IMainView;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 
 import org.eclipse.leshan.ResponseCode;
 import org.eclipse.leshan.client.observer.LwM2mClientObserver;
 import org.eclipse.leshan.client.servers.DmServerInfo;
 import org.eclipse.leshan.client.servers.ServerInfo;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static org.eclipse.leshan.LwM2mId.LOCATION;
@@ -110,7 +117,6 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver {
         startService();
     }
 
-
     /**
      * 开启服务
      */
@@ -130,6 +136,41 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver {
 
     public void unbindService() {
         mContext.unbindService(mConn);
+    }
+
+    @Override
+    public void scanQRCode(Context context) {
+    }
+
+    /**
+     * 生成二维码
+     * @param content 二维码内容
+     * @param width 二维码图片宽度
+     * @param height 二维码图片高度
+     * @return
+     */
+    @Override
+    public Bitmap encodeQRCode(String content, int width, int height) {
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        Map<EncodeHintType, String> hints = new HashMap<>();
+        hints.put(EncodeHintType.CHARACTER_SET, "utf-8");
+        try {
+            BitMatrix encode = qrCodeWriter.encode(content, BarcodeFormat.QR_CODE, width, height, hints);
+            int[] pixels = new int[width * height];
+            for (int i = 0; i < height; i++) {
+                for (int j = 0; j < width; j++) {
+                    if (encode.get(j, i)) {
+                        pixels[i * width + j] = 0x00000000;
+                    } else {
+                        pixels[i * width + j] = 0xffffffff;
+                    }
+                }
+            }
+            return Bitmap.createBitmap(pixels, 0, width, width, height, Bitmap.Config.RGB_565);
+        } catch (WriterException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private int serverId;

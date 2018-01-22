@@ -1,0 +1,90 @@
+com.acker.simplezxing.R
+com.acker.simplezxing.R$attr
+com.acker.simplezxing.R$color
+com.acker.simplezxing.R$color: int possible_result_points
+com.acker.simplezxing.R$color: int result_view
+com.acker.simplezxing.R$color: int viewfinder_laser
+com.acker.simplezxing.R$color: int viewfinder_mask
+com.acker.simplezxing.R$id
+com.acker.simplezxing.R$id: int decode
+com.acker.simplezxing.R$id: int decode_failed
+com.acker.simplezxing.R$id: int decode_succeeded
+com.acker.simplezxing.R$id: int preview_view
+com.acker.simplezxing.R$id: int quit
+com.acker.simplezxing.R$id: int viewfinder_view
+com.acker.simplezxing.R$layout
+com.acker.simplezxing.R$layout: int capture
+com.acker.simplezxing.R$raw
+com.acker.simplezxing.R$raw: int beep
+com.acker.simplezxing.R$string
+com.acker.simplezxing.R$string: int hint_scan
+com.acker.simplezxing.R$string: int msg_camera_framework_bug
+com.acker.simplezxing.activity.CaptureActivity
+com.acker.simplezxing.activity.CaptureActivity: int REQ_CODE
+com.acker.simplezxing.activity.CaptureActivity: java.lang.String KEY_NEED_BEEP
+com.acker.simplezxing.activity.CaptureActivity: boolean VALUE_BEEP
+com.acker.simplezxing.activity.CaptureActivity: boolean VALUE_NO_BEEP
+com.acker.simplezxing.activity.CaptureActivity: java.lang.String KEY_NEED_VIBRATION
+com.acker.simplezxing.activity.CaptureActivity: boolean VALUE_VIBRATION
+com.acker.simplezxing.activity.CaptureActivity: boolean VALUE_NO_VIBRATION
+com.acker.simplezxing.activity.CaptureActivity: java.lang.String KEY_NEED_EXPOSURE
+com.acker.simplezxing.activity.CaptureActivity: boolean VALUE_EXPOSURE
+com.acker.simplezxing.activity.CaptureActivity: boolean VALUE_NO_EXPOSURE
+com.acker.simplezxing.activity.CaptureActivity: java.lang.String KEY_FLASHLIGHT_MODE
+com.acker.simplezxing.activity.CaptureActivity: byte VALUE_FLASHLIGHT_AUTO
+com.acker.simplezxing.activity.CaptureActivity: byte VALUE_FLASHLIGHT_ON
+com.acker.simplezxing.activity.CaptureActivity: byte VALUE_FLASHLIGHT_OFF
+com.acker.simplezxing.activity.CaptureActivity: java.lang.String KEY_ORIENTATION_MODE
+com.acker.simplezxing.activity.CaptureActivity: byte VALUE_ORIENTATION_AUTO
+com.acker.simplezxing.activity.CaptureActivity: byte VALUE_ORIENTATION_LANDSCAPE
+com.acker.simplezxing.activity.CaptureActivity: byte VALUE_ORIENTATION_PORTRAIT
+com.acker.simplezxing.activity.CaptureActivity: java.lang.String KEY_SCAN_AREA_FULL_SCREEN
+com.acker.simplezxing.activity.CaptureActivity: boolean VALUE_SCAN_AREA_FULL_SCREEN
+com.acker.simplezxing.activity.CaptureActivity: boolean VALUE_SCAN_AREA_VIEW_FINDER
+com.acker.simplezxing.activity.CaptureActivity: java.lang.String EXTRA_SETTING_BUNDLE
+com.acker.simplezxing.activity.CaptureActivity: java.lang.String EXTRA_SCAN_RESULT
+com.acker.simplezxing.activity.CaptureActivity: java.lang.String KEY_NEED_SCAN_HINT_TEXT
+com.acker.simplezxing.activity.CaptureActivity: boolean VALUE_SCAN_HINT_TEXT
+com.acker.simplezxing.activity.CaptureActivity: boolean VALUE_NO_SCAN_HINT_TEXT
+com.acker.simplezxing.activity.CaptureActivity: CaptureActivity()
+com.acker.simplezxing.activity.CaptureActivityHandler$State: com.acker.simplezxing.activity.CaptureActivityHandler$State[] values()
+com.acker.simplezxing.activity.CaptureActivityHandler$State: com.acker.simplezxing.activity.CaptureActivityHandler$State valueOf(java.lang.String)
+com.acker.simplezxing.camera.open.CameraFacing: com.acker.simplezxing.camera.open.CameraFacing[] values()
+com.acker.simplezxing.camera.open.CameraFacing: com.acker.simplezxing.camera.open.CameraFacing valueOf(java.lang.String)
+com.acker.simplezxing.view.ViewfinderView
+com.acker.simplezxing.view.ViewfinderView: ViewfinderView(android.content.Context,android.util.AttributeSet)
+com.acker.simplezxing.view.ViewfinderView: void setCameraManager(com.acker.simplezxing.camera.CameraManager)
+com.acker.simplezxing.view.ViewfinderView: void setNeedDrawText(boolean)
+com.acker.simplezxing.view.ViewfinderView: void setScanAreaFullScreen(boolean)
+com.google.zxing.BarcodeFormat: com.google.zxing.BarcodeFormat[] values()
+com.google.zxing.BarcodeFormat: com.google.zxing.BarcodeFormat valueOf(java.lang.String)
+com.google.zxing.DecodeHintType: com.google.zxing.DecodeHintType[] values()
+com.google.zxing.DecodeHintType: com.google.zxing.DecodeHintType valueOf(java.lang.String)
+com.google.zxing.EncodeHintType: com.google.zxing.EncodeHintType[] values()
+com.google.zxing.EncodeHintType: com.google.zxing.EncodeHintType valueOf(java.lang.String)
+com.google.zxing.ResultMetadataType: com.google.zxing.ResultMetadataType[] values()
+com.google.zxing.ResultMetadataType: com.google.zxing.ResultMetadataType valueOf(java.lang.String)
+com.google.zxing.aztec.decoder.Decoder$Table: com.google.zxing.aztec.decoder.Decoder$Table[] values()
+com.google.zxing.aztec.decoder.Decoder$Table: com.google.zxing.aztec.decoder.Decoder$Table valueOf(java.lang.String)
+com.google.zxing.client.result.ParsedResultType: com.google.zxing.client.result.ParsedResultType[] values()
+com.google.zxing.client.result.ParsedResultType: com.google.zxing.client.result.ParsedResultType valueOf(java.lang.String)
+com.google.zxing.common.CharacterSetECI: com.google.zxing.common.CharacterSetECI[] values()
+com.google.zxing.common.CharacterSetECI: com.google.zxing.common.CharacterSetECI valueOf(java.lang.String)
+com.google.zxing.datamatrix.decoder.DecodedBitStreamParser$Mode: com.google.zxing.datamatrix.decoder.DecodedBitStreamParser$Mode[] values()
+com.google.zxing.datamatrix.decoder.DecodedBitStreamParser$Mode: com.google.zxing.datamatrix.decoder.DecodedBitStreamParser$Mode valueOf(java.lang.String)
+com.google.zxing.datamatrix.encoder.SymbolShapeHint: com.google.zxing.datamatrix.encoder.SymbolShapeHint[] values()
+com.google.zxing.datamatrix.encoder.SymbolShapeHint: com.google.zxing.datamatrix.encoder.SymbolShapeHint valueOf(java.lang.String)
+com.google.zxing.oned.Code128Writer$CType: com.google.zxing.oned.Code128Writer$CType[] values()
+com.google.zxing.oned.Code128Writer$CType: com.google.zxing.oned.Code128Writer$CType valueOf(java.lang.String)
+com.google.zxing.oned.rss.expanded.decoders.CurrentParsingState$State: com.google.zxing.oned.rss.expanded.decoders.CurrentParsingState$State[] values()
+com.google.zxing.oned.rss.expanded.decoders.CurrentParsingState$State: com.google.zxing.oned.rss.expanded.decoders.CurrentParsingState$State valueOf(java.lang.String)
+com.google.zxing.pdf417.decoder.DecodedBitStreamParser$Mode: com.google.zxing.pdf417.decoder.DecodedBitStreamParser$Mode[] values()
+com.google.zxing.pdf417.decoder.DecodedBitStreamParser$Mode: com.google.zxing.pdf417.decoder.DecodedBitStreamParser$Mode valueOf(java.lang.String)
+com.google.zxing.pdf417.encoder.Compaction: com.google.zxing.pdf417.encoder.Compaction[] values()
+com.google.zxing.pdf417.encoder.Compaction: com.google.zxing.pdf417.encoder.Compaction valueOf(java.lang.String)
+com.google.zxing.qrcode.decoder.DataMask: com.google.zxing.qrcode.decoder.DataMask[] values()
+com.google.zxing.qrcode.decoder.DataMask: com.google.zxing.qrcode.decoder.DataMask valueOf(java.lang.String)
+com.google.zxing.qrcode.decoder.ErrorCorrectionLevel: com.google.zxing.qrcode.decoder.ErrorCorrectionLevel[] values()
+com.google.zxing.qrcode.decoder.ErrorCorrectionLevel: com.google.zxing.qrcode.decoder.ErrorCorrectionLevel valueOf(java.lang.String)
+com.google.zxing.qrcode.decoder.Mode: com.google.zxing.qrcode.decoder.Mode[] values()
+com.google.zxing.qrcode.decoder.Mode: com.google.zxing.qrcode.decoder.Mode valueOf(java.lang.String)
