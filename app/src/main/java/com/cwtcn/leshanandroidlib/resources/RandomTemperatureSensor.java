@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RandomTemperatureSensor extends ExtendBaseInstanceEnabler {
 
+    public static final int OBJECT_ID_TEMPERATURE_SENSOR = 3303;
     public static final String UNIT_CELSIUS = "cel";
     public static final int SENSOR_VALUE = 5700;
     public static final int UNITS = 5701;

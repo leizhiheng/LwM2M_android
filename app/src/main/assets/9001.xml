@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LWM2M  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://openmobilealliance.org/tech/profiles/LWM2M.xsd">
+	<Object ObjectType="MODefinition">
+		<Name>Non Disturb Mode</Name>
+		<Description1>Description: This IPSO object should be used as Non-disturb mode.</Description1>
+		<ObjectID>9001</ObjectID>
+		<ObjectURN>urn:oma:lwm2m:ext:9001</ObjectURN>
+		<MultipleInstances>Multiple</MultipleInstances>
+		<Mandatory>Optional</Mandatory>
+		<Resources>	
+			<Item ID="5823">
+				<Name>Event Identifier</Name>
+				<Operations>RW</Operations>
+				<MultipleInstances>Single</MultipleInstances>
+				<Mandatory>Optional</Mandatory>
+				<Type>String</Type>
+				<RangeEnumeration></RangeEnumeration>
+				<Units></Units>
+				<Description>for server to send cmd to client</Description>
+			</Item>
+			<Item ID="5527">
+				<Name>Text</Name>
+				<Operations>RW</Operations>
+				<MultipleInstances>Single</MultipleInstances>
+				<Mandatory>Optional</Mandatory>
+				<Type>String</Type>
+				<RangeEnumeration></RangeEnumeration>
+				<Units></Units>
+				<Description>for client to store the contact list</Description>
+			</Item>						
+		</Resources>
+		<Description2></Description2>
+	</Object>
+</LWM2M>

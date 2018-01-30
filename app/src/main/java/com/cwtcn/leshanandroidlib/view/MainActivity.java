@@ -2,17 +2,13 @@ package com.cwtcn.leshanandroidlib.view;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.Intent;
+import android.app.AlertDialog;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
-import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,8 +21,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.acker.simplezxing.activity.CaptureActivity;
 import com.cwtcn.leshanandroidlib.R;
+import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.dialog.ResourceOperateDialog;
 import com.cwtcn.leshanandroidlib.model.ResourceBean;
 import com.cwtcn.leshanandroidlib.presenter.IMainPresenter;
@@ -43,6 +39,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
     public static final String TAG = "MainActivity";
 
     private static final int PERMISSIONS_REQUEST_LOCATION = 1;
+    private static final int PERMISSIONS_REQUEST_CONTACT = 2;
     private static final int REQ_CODE_PERMISSION = 0x1111;
     private Button mStartButton, mStartLoc, mStopButton;
     private ListView mListDevice, mListLocation, mListTemperature;
@@ -80,23 +77,25 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         initView();
 
         mPresenter = new MainPresenter(this, this.getApplicationContext());
+
+        encodeQRCode();
     }
 
     private void initView() {
         mStartButton = (Button) findViewById(R.id.start_button);
-        mStartLoc = findViewById(R.id.start_local_button);
+        mStartLoc = (Button) findViewById(R.id.start_local_button);
         mStopButton = (Button) findViewById(R.id.stop_button);
         mStartButton.setOnClickListener(this);
         mStopButton.setOnClickListener(this);
         mStartLoc.setOnClickListener(this);
         mStartLoc.setVisibility(View.GONE);
 
-        mImageView = findViewById(R.id.imageview_qrcode);
+        mImageView = (ImageView) findViewById(R.id.imageview_qrcode);
 
-        mListDevice = findViewById(R.id.resource_list_device);
+        mListDevice = (ListView) findViewById(R.id.resource_list_device);
 //        mListDevice.setVisibility(View.GONE);
-        mListLocation = findViewById(R.id.resource_list_location);
-        mListTemperature = findViewById(R.id.resource_list_temperature);
+        mListLocation = (ListView) findViewById(R.id.resource_list_location);
+        mListTemperature = (ListView) findViewById(R.id.resource_list_temperature);
         mListDevice.setAdapter(new ResourceAdapter(mDeviceResources));
         mListLocation.setAdapter(new ResourceAdapter(mLocationResources));
         mListTemperature.setAdapter(new ResourceAdapter(mTemperatureResources));
@@ -104,7 +103,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         mListLocation.setOnItemClickListener(this);
         mListTemperature.setOnItemClickListener(this);
 
-        mClientStatus = findViewById(R.id.client_status);
+        mClientStatus = (TextView) findViewById(R.id.client_status);
     }
 
     @Override
@@ -132,13 +131,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
             case R.id.resource_list_device:
 //                bean = mDeviceResources.get(position);
                 if (position == 0) {
-                    scanQRCode();
+//                    scanQRCode();
                 } else if (position == 1) {
-                    WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
-                    int width = manager.getDefaultDisplay().getWidth() - 100;
-                    Bitmap qrBm = mPresenter.encodeQRCode("雷志恒", width, width);
-                    showToast("QRCode image encode succussful ? " + (qrBm == null) + ", width = " + width);
-                    mImageView.setBackground(new BitmapDrawable(qrBm));
+
                 }
 
                 return;
@@ -164,76 +159,95 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         }
     }
 
-    private void scanQRCode() {
-        // Open Scan Activity
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            // Do not have the permission of camera, request it.
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, REQ_CODE_PERMISSION);
-        } else {
-            // Have gotten the permission
-            startCaptureActivityForResult();
-        }
+    /**
+     * 生成二维码
+     */
+    private void encodeQRCode() {
+        WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        int width = manager.getDefaultDisplay().getWidth() - 100;
+        Bitmap qrBm = mPresenter.encodeQRCode(ServerConfig.END_POINT, width, width);
+//        showToast("QRCode image encode succussful ? " + (qrBm == null) + ", width = " + width);
+        mImageView.setBackground(new BitmapDrawable(qrBm));
     }
-
-    private void startCaptureActivityForResult() {
-        Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
-        Bundle bundle = new Bundle();
-        bundle.putBoolean(CaptureActivity.KEY_NEED_BEEP, CaptureActivity.VALUE_BEEP);
-        bundle.putBoolean(CaptureActivity.KEY_NEED_VIBRATION, CaptureActivity.VALUE_VIBRATION);
-        bundle.putBoolean(CaptureActivity.KEY_NEED_EXPOSURE, CaptureActivity.VALUE_NO_EXPOSURE);
-        bundle.putByte(CaptureActivity.KEY_FLASHLIGHT_MODE, CaptureActivity.VALUE_FLASHLIGHT_OFF);
-        bundle.putByte(CaptureActivity.KEY_ORIENTATION_MODE, CaptureActivity.VALUE_ORIENTATION_AUTO);
-        bundle.putBoolean(CaptureActivity.KEY_SCAN_AREA_FULL_SCREEN, CaptureActivity.VALUE_SCAN_AREA_FULL_SCREEN);
-        bundle.putBoolean(CaptureActivity.KEY_NEED_SCAN_HINT_TEXT, CaptureActivity.VALUE_SCAN_HINT_TEXT);
-        intent.putExtra(CaptureActivity.EXTRA_SETTING_BUNDLE, bundle);
-        startActivityForResult(intent, CaptureActivity.REQ_CODE);
-    }
+//    /**
+//     * 进入到二维码扫描界面，进行二维码扫描
+//     */
+//    private void scanQRCode() {
+//        // Open Scan Activity
+//        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+//            // Do not have the permission of camera, request it.
+//            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, REQ_CODE_PERMISSION);
+//        } else {
+//            // Have gotten the permission
+//            startCaptureActivityForResult();
+//        }
+//    }
+//
+//    private void startCaptureActivityForResult() {
+//        Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
+//        Bundle bundle = new Bundle();
+//        bundle.putBoolean(CaptureActivity.KEY_NEED_BEEP, CaptureActivity.VALUE_BEEP);
+//        bundle.putBoolean(CaptureActivity.KEY_NEED_VIBRATION, CaptureActivity.VALUE_VIBRATION);
+//        bundle.putBoolean(CaptureActivity.KEY_NEED_EXPOSURE, CaptureActivity.VALUE_NO_EXPOSURE);
+//        bundle.putByte(CaptureActivity.KEY_FLASHLIGHT_MODE, CaptureActivity.VALUE_FLASHLIGHT_OFF);
+//        bundle.putByte(CaptureActivity.KEY_ORIENTATION_MODE, CaptureActivity.VALUE_ORIENTATION_AUTO);
+//        bundle.putBoolean(CaptureActivity.KEY_SCAN_AREA_FULL_SCREEN, CaptureActivity.VALUE_SCAN_AREA_FULL_SCREEN);
+//        bundle.putBoolean(CaptureActivity.KEY_NEED_SCAN_HINT_TEXT, CaptureActivity.VALUE_SCAN_HINT_TEXT);
+//        intent.putExtra(CaptureActivity.EXTRA_SETTING_BUNDLE, bundle);
+//        startActivityForResult(intent, CaptureActivity.REQ_CODE);
+//    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
-            case REQ_CODE_PERMISSION: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // User agree the permission
-                    startCaptureActivityForResult();
-                } else {
-                    // User disagree the permission
-                    Toast.makeText(this, "You must agree the camera permission request before you use the code scan function", Toast.LENGTH_LONG).show();
-                }
-            }
-            break;
+            //扫描二维码时，请求Camera权限的结果
+//            case REQ_CODE_PERMISSION: {
+//                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                    // User agree the permission
+//                    startCaptureActivityForResult();
+//                } else {
+//                    // User disagree the permission
+//                    Toast.makeText(this, "You must agree the camera permission request before you use the code scan function", Toast.LENGTH_LONG).show();
+//                }
+//            }
+//            break;
             case PERMISSIONS_REQUEST_LOCATION:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     mPresenter.updateLocation();
                 }
                 break;
-        }
-    }
-
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        switch (requestCode) {
-            case CaptureActivity.REQ_CODE:
-                String codeString = "";
-                switch (resultCode) {
-                    case RESULT_OK:
-                        codeString = data.getStringExtra(CaptureActivity.EXTRA_SCAN_RESULT);
-                        showToast("QRCode string:" + codeString);
-                        break;
-                    case RESULT_CANCELED:
-                        if (data != null) {
-                            // for some reason camera is not working correctly
-                            codeString = data.getStringExtra(CaptureActivity.EXTRA_SCAN_RESULT);
-                            showToast("QRCode string:" + codeString);
-                        }
-                        break;
+            case PERMISSIONS_REQUEST_CONTACT:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    mPresenter.register(0);
                 }
                 break;
         }
     }
+
+
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
+//        switch (requestCode) {
+//            case CaptureActivity.REQ_CODE:
+//                String codeString = "";
+//                switch (resultCode) {
+//                    case RESULT_OK:
+//                        codeString = data.getStringExtra(CaptureActivity.EXTRA_SCAN_RESULT);
+//                        showToast("QRCode string:" + codeString);
+//                        break;
+//                    case RESULT_CANCELED:
+//                        if (data != null) {
+//                            // for some reason camera is not working correctly
+//                            codeString = data.getStringExtra(CaptureActivity.EXTRA_SCAN_RESULT);
+//                            showToast("QRCode string:" + codeString);
+//                        }
+//                        break;
+//                }
+//                break;
+//        }
+//    }
 
     @Override
     protected void onResume() {
@@ -251,7 +265,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
 
     @Override
     public void register(int serverId) {
-        mPresenter.register(serverId);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_CONTACTS, Manifest.permission.READ_CONTACTS},
+                    PERMISSIONS_REQUEST_CONTACT);
+        } else {
+            mPresenter.register(serverId);
+        }
     }
 
     @Override
@@ -337,7 +357,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
             if (convertView == null) {
                 convertView = mInflater.inflate(R.layout.adapter_resource_list_item, null, false);
             }
-            TextView name = convertView.findViewById(R.id.resource_name);
+            TextView name = (TextView) convertView.findViewById(R.id.resource_name);
             name.setText(mLists.get(position).name);
             return convertView;
         }

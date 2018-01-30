@@ -1,6 +1,5 @@
 package com.cwtcn.leshanandroidlib.utils;
 
-import android.support.compat.BuildConfig;
 import android.util.Log;
 
 /**

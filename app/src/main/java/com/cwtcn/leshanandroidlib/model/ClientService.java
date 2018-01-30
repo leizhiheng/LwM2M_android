@@ -10,15 +10,17 @@ import android.os.IBinder;
 
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.resources.AddressableTextDisplay;
+import com.cwtcn.leshanandroidlib.resources.ContactList;
 import com.cwtcn.leshanandroidlib.resources.ExtendBaseInstanceEnabler;
 import com.cwtcn.leshanandroidlib.resources.ExtendObjectsInitializer;
 import com.cwtcn.leshanandroidlib.resources.IlluminanceSensor;
 import com.cwtcn.leshanandroidlib.resources.MyDevice;
 import com.cwtcn.leshanandroidlib.resources.MyLocation;
+import com.cwtcn.leshanandroidlib.resources.NoDisturbMode;
 import com.cwtcn.leshanandroidlib.resources.RandomTemperatureSensor;
 import com.cwtcn.leshanandroidlib.resources.SetPoint;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
-import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteNotifyPeriodListener;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.leshan.client.californium.LeshanClient;
@@ -37,6 +39,8 @@ import org.eclipse.leshan.util.Hex;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,28 +53,36 @@ import static org.eclipse.leshan.client.object.Security.noSecBootstap;
 import static org.eclipse.leshan.client.object.Security.psk;
 import static org.eclipse.leshan.client.object.Security.pskBootstrap;
 
-public class ClientService extends Service implements IClientModel, OnWriteNotifyPeriodListener {
+public class ClientService extends Service implements IClientModel, OnWriteReadListener {
     public static final String TAG = "ClientService";
 
     public static final int SERVER_ID_LOCAL = 0;
     public static final int SERVER_ID_REMOTE = 1;
 
-    private final static String[] modelPaths = new String[]{"3301.xml", "3303.xml", "3341.xml", "3308.xml"};
-    private static final int OBJECT_ID_TEMPERATURE_SENSOR = 3303;
-    private final static String DEFAULT_ENDPOINT = "LeshanClientDemo";
-    private final static String USAGE = "java -jar leshan-client-demo.jar [OPTION]";
+    /*添加一个Object第1步：添加model文件*/
+    private final static String[] modelPaths = new String[]{
+            "3301.xml", "3303.xml", "3308.xml",
+            "3341.xml", "9000.xml", "9001.xml"};
+    /*添加一个Object第2步：添加Object对应的类*/
+    private final static Map<Integer, Class> objectClasses;
+    static {
+        //cus-表示自定义Object;oma-表示官方定义的Object
+        objectClasses = new HashMap<Integer, Class>();
+        objectClasses.put(LOCATION, MyLocation.class);//Location-oma
+        objectClasses.put(3301, IlluminanceSensor.class);//Illuminance-oma
+        objectClasses.put(3303, RandomTemperatureSensor.class);//Temperature-oma
+        objectClasses.put(3308, SetPoint.class);//Set Point-oma
+        objectClasses.put(3341, AddressableTextDisplay.class);//Addressable Text Display-oma
+        objectClasses.put(9000, ContactList.class);//ContactList-cus
+        objectClasses.put(9001, NoDisturbMode.class);//NoDisturbMode-cus
+    }
+    private final static Map<Integer, ExtendBaseInstanceEnabler> baseInstances = new HashMap<Integer, ExtendBaseInstanceEnabler>();
 
     private Context mContext;
     private ObjectsInitializer initializer;
-    private MyLocation locationInstance;
     private LeshanClient mClient;
     private LwM2mClientObserver mObserver;
     private MyDevice mDevice;
-    private MyLocation mLocation, mLocationTemp;
-    private RandomTemperatureSensor mTemperature;
-    private IlluminanceSensor mIllumunance;
-    private AddressableTextDisplay mTextDisplay;
-    private SetPoint mSetPoint;
 
     private String mRegistrationId;
 
@@ -179,14 +191,6 @@ public class ClientService extends Service implements IClientModel, OnWriteNotif
     public void createAndStartClient(String endpoint, String localAddress, int localPort,
                                      String secureLocalAddress, int secureLocalPort, boolean needBootstrap, String serverURI, byte[] pskIdentity,
                                      byte[] pskKey, Float latitude, Float longitude, float scaleFactor) {
-        mLocation = new MyLocation(latitude, longitude, scaleFactor);
-        mLocation.setContext(mContext);
-        mLocationTemp = new MyLocation(latitude, longitude, scaleFactor);
-        mTemperature = new RandomTemperatureSensor();
-        mIllumunance = new IlluminanceSensor();
-        mTextDisplay = new AddressableTextDisplay();
-        mSetPoint = new SetPoint();
-        mSetPoint.setOnWriteNotifyPeriodListener(this);
 
         // Initialize model
         List<ObjectModel> models = ObjectLoader.loadDefault();
@@ -209,14 +213,11 @@ public class ClientService extends Service implements IClientModel, OnWriteNotif
             }
         }
         initializer.setClassForObject(DEVICE, MyDevice.class);
-        //LOCATION属于单实例对象，所以只能设置一个实例，否则报错
-        initializer.setInstancesForObject(LOCATION, mLocation/*, mLocationTemp*/);
-        initializer.setInstancesForObject(OBJECT_ID_TEMPERATURE_SENSOR, mTemperature);
-        //initializer.setInstancesForObject(IlluminanceSensor.OBJECT_ID_ILLUMINANCE, mIllumunance);
-        initializer.setInstancesForObject(AddressableTextDisplay.OBJECT_ID_ADDRESSABLE_TEXT_DISPLAY, mTextDisplay);
-        initializer.setInstancesForObject(SetPoint.OBJECT_ID_SET_POINT, mSetPoint);
-        List<LwM2mObjectEnabler> enablers = initializer.create(SECURITY, SERVER, DEVICE, LOCATION, SetPoint.OBJECT_ID_SET_POINT,
-                AddressableTextDisplay.OBJECT_ID_ADDRESSABLE_TEXT_DISPLAY, OBJECT_ID_TEMPERATURE_SENSOR);
+        List<LwM2mObjectEnabler> enablers = initializer.create(SECURITY, SERVER, DEVICE);
+        //设置其他的Object
+        List<LwM2mObjectEnabler> enablersMore = setInstancesForObject();
+        enablers.addAll(enablersMore);
+
 
         // Create CoAP Config
         NetworkConfig coapConfig = null;
@@ -257,14 +258,37 @@ public class ClientService extends Service implements IClientModel, OnWriteNotif
         mClient.start();
     }
 
+    private List<LwM2mObjectEnabler> setInstancesForObject() {
+        List<LwM2mObjectEnabler> enablers = new ArrayList<LwM2mObjectEnabler>();
+        for (int objectId:objectClasses.keySet()) {
+            try {
+                ExtendBaseInstanceEnabler baseInstance = (ExtendBaseInstanceEnabler) objectClasses.get(objectId).newInstance();
+                baseInstance.setContext(mContext);
+                baseInstance.setObjectId(objectId);
+                baseInstance.setOnWriteNotifyPeriodListener(this);
+                baseInstances.put(objectId, baseInstance);
+                /*添加一个Object第3步：创建实例，并添加到initializer中*/
+                initializer.setInstancesForObject(objectId, baseInstance);
+                enablers.add(initializer.create(objectId));
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return enablers;
+    }
+
     @Override
     public void updateResource(int objectId, ResourceBean bean, String newValue) {
         switch (objectId) {
             case LOCATION:
-                mLocation.updateLocation(bean.id, Float.valueOf(newValue));
+                MyLocation location = (MyLocation) baseInstances.get(objectId);
+                location.updateLocation(bean.id, Float.valueOf(newValue));
                 break;
-            case OBJECT_ID_TEMPERATURE_SENSOR:
-                mTemperature.adjustTemperature(Double.valueOf(newValue));
+            case RandomTemperatureSensor.OBJECT_ID_TEMPERATURE_SENSOR:
+                RandomTemperatureSensor sensor = (RandomTemperatureSensor) baseInstances.get(objectId);
+                sensor.adjustTemperature(Double.valueOf(newValue));
                 break;
         }
     }
@@ -314,6 +338,7 @@ public class ClientService extends Service implements IClientModel, OnWriteNotif
             }
         }
 
+        setIntervalInSec(objectId, period);
     }
 
     @Override
@@ -322,13 +347,20 @@ public class ClientService extends Service implements IClientModel, OnWriteNotif
     }
 
     @Override
+    public void setStringToPreference(String key, String value) {
+        mPreferences.edit().putString(key, value).commit();
+    }
+
+    @Override
+    public String getStringFromPreferemce(String key) {
+        return mPreferences.getString(NoDisturbMode.KEY_NO_DISTURB_MODE_MSG, null);
+    }
+
     public void setIntervalInSec(int objectId, int period) {
         mPreferences.edit().putInt(String.valueOf(objectId), period).commit();
     }
 
-    @Override
     public int getIntervalInSec(int objectId) {
-        DebugLog.d("getIntervalInSec Thread:" + Thread.currentThread().getId());
         return mPreferences.getInt(String.valueOf(objectId), -1);
     }
 

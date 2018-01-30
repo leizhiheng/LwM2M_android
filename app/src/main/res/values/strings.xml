@@ -1,3 +1,16 @@
 <resources>
+    <string name="cancel">Cancel</string>
+    <string name="ok">Ok</string>
     <string name="app_name">LeshanAndroidLib</string>
+    <string name="resource_list_title_temperature">TemperatureSensor\'s resources</string>
+    <string name="resource_list_title_location">Location\'s resources</string>
+    <string name="resource_list_title_device">Device\'s resources</string>
+    <string name="button_start_loc_server">Start Loc Server</string>
+    <string name="button_start_remote_server">Start Remote Client</string>
+    <string name="button_stop_server">Stop Client</string>
+    <string name="title_current_value">Current value:</string>
+    <string name="title_new_value">New value:</string>
+    <string name="hint_input_new_value">input new value</string>
+    <string name="text_is_processing">正在执行，请等待...</string>
+
 </resources>

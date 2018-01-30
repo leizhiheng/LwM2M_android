@@ -1,7 +1,6 @@
 package com.cwtcn.leshanandroidlib.resources;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
-import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteNotifyPeriodListener;
 
 import org.eclipse.leshan.core.node.LwM2mResource;
 import org.eclipse.leshan.core.response.ExecuteResponse;
@@ -18,11 +17,6 @@ public class SetPoint extends ExtendBaseInstanceEnabler {
 
     private String mText;
 
-    private OnWriteNotifyPeriodListener mOnWriteNotifyPeriodListener;
-
-    public void setOnWriteNotifyPeriodListener(OnWriteNotifyPeriodListener listener) {
-        this.mOnWriteNotifyPeriodListener = listener;
-    }
 
     @Override
     public synchronized ReadResponse read(int resourceId) {
@@ -30,8 +24,8 @@ public class SetPoint extends ExtendBaseInstanceEnabler {
         case SET_POINT_VALUE:
             DebugLog.d("read Thread:" + Thread.currentThread().getId());
             int period = -1;
-            if (mOnWriteNotifyPeriodListener != null) {
-                period = mOnWriteNotifyPeriodListener.readPeriod(LOCATION);
+            if (mOnWriteReadListener != null) {
+                period = mOnWriteReadListener.readPeriod(LOCATION);
             }
             return ReadResponse.success(resourceId, period);
         default:
@@ -44,8 +38,8 @@ public class SetPoint extends ExtendBaseInstanceEnabler {
         switch (resourceid) {
             case SET_POINT_VALUE://用于写Location的IntervalInSec
                 double period = Double.valueOf(value.getValue().toString());
-                if (mOnWriteNotifyPeriodListener != null) {
-                    mOnWriteNotifyPeriodListener.writedPeriod(LOCATION, (int) period);
+                if (mOnWriteReadListener != null) {
+                    mOnWriteReadListener.writedPeriod(LOCATION, (int) period);
                 }
                 DebugLog.d("write resource id  = " + resourceid + ", value = " + value.toString() + ", period = " + period);
                 return WriteResponse.success();

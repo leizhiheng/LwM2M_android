@@ -18,6 +18,6 @@
         android:layout_marginTop="10dp"
         android:layout_centerHorizontal="true"
         android:layout_below="@id/progressBar"
-        android:text="正在执行，请等待..."/>
+        android:text="@string/text_is_processing"/>
 
 </RelativeLayout>

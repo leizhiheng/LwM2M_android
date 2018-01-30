@@ -34,7 +34,6 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
     private float longitude;
     private float scaleFactor;
     private Date timestamp;
-    private Context mContext;
     private Map<Integer, Long> observedResource = new HashMap<Integer, Long>();
     public void setContext(Context context) {
         this.mContext = context;

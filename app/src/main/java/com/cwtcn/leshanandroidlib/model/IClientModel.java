@@ -11,6 +11,4 @@ public interface IClientModel {
     boolean isClientStarted();
     void setRegistrationId(String registrationId);
     String getRegistrationId();
-    void setIntervalInSec(int objectId, int period);
-    int getIntervalInSec(int objectId);
 }

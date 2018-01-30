@@ -51,11 +51,11 @@ public class ResourceOperateDialog extends DialogFragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        TextView name = view.findViewById(R.id.resource_name);
-        TextView currentValue = view.findViewById(R.id.resource_current_value);
-        final EditText newValue = view.findViewById(R.id.resource_new_value);
-        Button cancel = view.findViewById(R.id.cancel);
-        Button ok = view.findViewById(R.id.ok);
+        TextView name = (TextView) view.findViewById(R.id.resource_name);
+        TextView currentValue = (TextView) view.findViewById(R.id.resource_current_value);
+        final EditText newValue = (EditText) view.findViewById(R.id.resource_new_value);
+        Button cancel = (Button) view.findViewById(R.id.cancel);
+        Button ok = (Button) view.findViewById(R.id.ok);
 
         name.setText(mResource.name);
         currentValue.setText(mResource.value == null ? "" : mResource.value.toString());

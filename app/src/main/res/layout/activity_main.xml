@@ -23,7 +23,7 @@
                 android:layout_height="50dp"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:text="Start Remote Client" />
+                android:text="@string/button_start_remote_server" />
 
             <Button
                 android:id="@+id/start_local_button"
@@ -32,7 +32,7 @@
                 android:layout_marginLeft="10dp"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:text="Start Loc server" />
+                android:text="@string/button_start_loc_server" />
         </LinearLayout>
 
         <Button
@@ -42,7 +42,7 @@
             android:layout_marginLeft="10dp"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Stop Client" />
+            android:text="@string/button_stop_server" />
 
         <TextView
             android:id="@+id/client_status"
@@ -59,7 +59,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="Device's Resources"
+            android:text="@string/resource_list_title_device"
             android:textSize="@dimen/text_size_title" />
 
         <com.cwtcn.leshanandroidlib.widget.ListviewForScrollview
@@ -75,7 +75,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="Location's Resource"
+            android:text="@string/resource_list_title_location"
             android:textSize="@dimen/text_size_title" />
 
         <com.cwtcn.leshanandroidlib.widget.ListviewForScrollview
@@ -91,7 +91,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="TemperatureSensor's resources"
+            android:text="@string/resource_list_title_temperature"
             android:textSize="@dimen/text_size_title" />
 
         <com.cwtcn.leshanandroidlib.widget.ListviewForScrollview

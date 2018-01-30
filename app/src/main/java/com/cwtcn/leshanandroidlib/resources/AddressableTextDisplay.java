@@ -1,21 +1,12 @@
 package com.cwtcn.leshanandroidlib.resources;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
-import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteNotifyPeriodListener;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
-import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
 import org.eclipse.leshan.core.node.LwM2mResource;
 import org.eclipse.leshan.core.response.ExecuteResponse;
 import org.eclipse.leshan.core.response.ReadResponse;
 import org.eclipse.leshan.core.response.WriteResponse;
-import org.eclipse.leshan.util.NamedThreadFactory;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class AddressableTextDisplay extends ExtendBaseInstanceEnabler {
 
@@ -26,9 +17,9 @@ public class AddressableTextDisplay extends ExtendBaseInstanceEnabler {
 
     private String mText;
 
-    private OnWriteNotifyPeriodListener mOnWriteNotifyPeriodListener;
+    private OnWriteReadListener mOnWriteNotifyPeriodListener;
 
-    public void setOnWriteNotifyPeriodListener(OnWriteNotifyPeriodListener listener) {
+    public void setOnWriteNotifyPeriodListener(OnWriteReadListener listener) {
         this.mOnWriteNotifyPeriodListener = listener;
     }
 
@@ -64,4 +55,5 @@ public class AddressableTextDisplay extends ExtendBaseInstanceEnabler {
                 return super.execute(resourceId, params);
         }
     }
+
 }

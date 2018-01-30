@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/resource_name"
         android:padding="10dp"
-        android:text="Current value:"
+        android:text="@string/title_current_value"
         android:textSize="@dimen/text_size_content" />
 
     <TextView
@@ -35,7 +35,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/resource_current"
         android:padding="10dp"
-        android:text="New value:"
+        android:text="@string/title_new_value"
         android:textSize="@dimen/text_size_content" />
 
     <EditText
@@ -45,7 +45,7 @@
         android:layout_below="@id/resource_current_value"
         android:layout_toRightOf="@id/resource_new"
         android:padding="10dp"
-        android:hint="input new value"
+        android:hint="@string/hint_input_new_value"
         android:textSize="@dimen/text_size_content" />
 
     <LinearLayout
@@ -60,14 +60,14 @@
             android:layout_height="50dp"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Cancel"/>
+            android:text="@string/cancel"/>
         <Button
             android:id="@+id/ok"
             android:layout_width="0dp"
             android:layout_height="50dp"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Ok"/>
+            android:text="@string/ok"/>
     </LinearLayout>
 
 </RelativeLayout>

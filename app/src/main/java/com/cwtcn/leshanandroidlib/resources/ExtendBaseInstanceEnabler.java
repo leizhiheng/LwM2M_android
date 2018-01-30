@@ -1,8 +1,10 @@
 package com.cwtcn.leshanandroidlib.resources;
 
-import com.cwtcn.leshanandroidlib.constant.ServerConfig;
+import android.content.Context;
+
 import com.cwtcn.leshanandroidlib.model.ClientService;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
 import org.eclipse.leshan.core.node.LwM2mResource;
@@ -17,11 +19,18 @@ import java.util.HashMap;
 
 public class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
 
+    protected Context mContext;
     private int objectId;
     /*服务器observe后，Notify间隔时间*/
     private int intervalInSec = -1;
     private boolean startedObseve = false;
     private HashMap<Integer, Long> observedResource;
+
+    protected OnWriteReadListener mOnWriteReadListener;
+    public void setOnWriteNotifyPeriodListener(OnWriteReadListener listener) {
+        this.mOnWriteReadListener = listener;
+    }
+
     @Override
     public WriteResponse write(int resourceid, LwM2mResource value) {
         return super.write(resourceid, value);
@@ -34,13 +43,19 @@ public class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
     @Override
     public void notifyObserve(int resourceId) {
         DebugLog.d("notifyObserve resourceId = " + resourceId);
+        if (intervalInSec < 0) {
+            intervalInSec = mOnWriteReadListener.readPeriod(objectId);
+        }
         if (observedResource == null) {
-            intervalInSec = ClientService.mPreferences.getInt(String.valueOf(objectId), -1);
             startedObseve = true;
             observedResource = new HashMap<Integer, Long>();
             startPeriodicNotify();
         }
         observedResource.put(resourceId, getNowMilliSecs());
+    }
+
+    public void setContext(Context context) {
+        mContext = context;
     }
 
     public void setObjectId(int objectId) {
