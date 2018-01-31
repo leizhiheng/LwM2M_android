@@ -1,5 +1,7 @@
 package com.cwtcn.leshanandroidlib.resources;
 
+import android.widget.Toast;
+
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
 
 import org.eclipse.leshan.core.node.LwM2mResource;
@@ -49,10 +51,11 @@ public class NoDisturbMode extends ExtendBaseInstanceEnabler {
     @Override
     public WriteResponse write(int resourceid, LwM2mResource value) {
         switch (resourceid) {
-            case TEXT:
+            case EVENT_IDENTIFIER:
                 String settingMsg = (String) value.getValue();
                 DebugLog.d("settingMsg:" + settingMsg);
                 setNonDisturbMode(settingMsg);
+                Toast.makeText(mContext, "settingMsg:" + settingMsg, Toast.LENGTH_LONG).show();
                 return WriteResponse.success();
             default:
                 return super.write(resourceid, value);
@@ -81,14 +84,14 @@ public class NoDisturbMode extends ExtendBaseInstanceEnabler {
     }
 
     private void setZenMode() {
-        try {
-            Class clazz = Class.forName("android.service.notification.ZenModeConfig");
-            Constructor configCon = clazz.getConstructor(null);
-
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            Class clazz = Class.forName("android.service.notification.ZenModeConfig");
+//            Constructor configCon = clazz.getConstructor(null);
+//
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (NoSuchMethodException e) {
+//            e.printStackTrace();
+//        }
     }
 }

@@ -1,11 +1,13 @@
 package com.cwtcn.leshanandroidlib.view;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -111,10 +113,10 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         switch (v.getId()) {
             case R.id.start_button:
                 //注册到服务器
-                register(1);
+                register();
                 break;
             case R.id.start_local_button:
-                register(0);
+                register();
                 break;
             case R.id.stop_button:
                 //注销客户端
@@ -219,7 +221,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
                 break;
             case PERMISSIONS_REQUEST_CONTACT:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    mPresenter.register(0);
+                    mPresenter.register();
                 }
                 break;
         }
@@ -260,23 +262,21 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mPresenter.unbindService();
     }
 
-    @Override
-    public void register(int serverId) {
+    public void register() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.WRITE_CONTACTS, Manifest.permission.READ_CONTACTS},
                     PERMISSIONS_REQUEST_CONTACT);
         } else {
-            mPresenter.register(serverId);
+            mPresenter.register();
         }
     }
 
     @Override
     public void destroyClient() {
-        mPresenter.destroy();
+        mPresenter.destroyClient();
     }
 
     @Override
@@ -288,6 +288,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void showProgress() {
         if (mProgressDialog == null) {
@@ -316,11 +317,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         } else {
             mPresenter.updateLocation();
         }
-    }
-
-    @Override
-    public void updateTemperature() {
-
     }
 
     @Override

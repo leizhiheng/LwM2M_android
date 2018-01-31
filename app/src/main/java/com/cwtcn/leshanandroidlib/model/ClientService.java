@@ -1,12 +1,18 @@
 package com.cwtcn.leshanandroidlib.model;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Binder;
+import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
+import android.text.TextUtils;
 
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.resources.AddressableTextDisplay;
@@ -23,6 +29,7 @@ import com.cwtcn.leshanandroidlib.utils.DebugLog;
 import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.californium.core.network.config.NetworkConfig;
+import org.eclipse.leshan.ResponseCode;
 import org.eclipse.leshan.client.californium.LeshanClient;
 import org.eclipse.leshan.client.californium.LeshanClientBuilder;
 import org.eclipse.leshan.client.object.Server;
@@ -30,6 +37,8 @@ import org.eclipse.leshan.client.observer.LwM2mClientObserver;
 import org.eclipse.leshan.client.resource.LwM2mInstanceEnabler;
 import org.eclipse.leshan.client.resource.LwM2mObjectEnabler;
 import org.eclipse.leshan.client.resource.ObjectsInitializer;
+import org.eclipse.leshan.client.servers.DmServerInfo;
+import org.eclipse.leshan.client.servers.ServerInfo;
 import org.eclipse.leshan.core.model.LwM2mModel;
 import org.eclipse.leshan.core.model.ObjectLoader;
 import org.eclipse.leshan.core.model.ObjectModel;
@@ -53,11 +62,8 @@ import static org.eclipse.leshan.client.object.Security.noSecBootstap;
 import static org.eclipse.leshan.client.object.Security.psk;
 import static org.eclipse.leshan.client.object.Security.pskBootstrap;
 
-public class ClientService extends Service implements IClientModel, OnWriteReadListener {
+public class ClientService extends Service implements IClientModel, OnWriteReadListener, LwM2mClientObserver {
     public static final String TAG = "ClientService";
-
-    public static final int SERVER_ID_LOCAL = 0;
-    public static final int SERVER_ID_REMOTE = 1;
 
     /*添加一个Object第1步：添加model文件*/
     private final static String[] modelPaths = new String[]{
@@ -65,6 +71,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
             "3341.xml", "9000.xml", "9001.xml"};
     /*添加一个Object第2步：添加Object对应的类*/
     private final static Map<Integer, Class> objectClasses;
+
     static {
         //cus-表示自定义Object;oma-表示官方定义的Object
         objectClasses = new HashMap<Integer, Class>();
@@ -76,29 +83,125 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         objectClasses.put(9000, ContactList.class);//ContactList-cus
         objectClasses.put(9001, NoDisturbMode.class);//NoDisturbMode-cus
     }
+
     private final static Map<Integer, ExtendBaseInstanceEnabler> baseInstances = new HashMap<Integer, ExtendBaseInstanceEnabler>();
 
     private Context mContext;
     private ObjectsInitializer initializer;
     private LeshanClient mClient;
-    private LwM2mClientObserver mObserver;
     private MyDevice mDevice;
 
     private String mRegistrationId;
 
     public static SharedPreferences mPreferences;
 
+    public enum State {NONE, REGISTERING, REGISTERED, DESTROYING, DESTTROYED, DESTROY_FAILED}
+
+    public static State mClientState = State.NONE;
+
+    public interface OnOperationResultListener {
+        void onStartOperate();
+
+        void onOperateReject(String rejectReason);
+
+        void onOperateResult(int resultCode, String msg);
+    }
+
+    private OnOperationResultListener mOnOperationResultListener;
+
+    @Override
+    public void setOnOperationResultListener(OnOperationResultListener listener) {
+        this.mOnOperationResultListener = listener;
+    }
+
+    private static final int MSG_WHAT_START_OPTERATE = 100;
+    private Handler mHandler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            int what = msg.what;
+            Bundle data = msg.getData();
+
+            String resultMsg = "";
+            DebugLog.d("handler message what:" + what);
+            switch (what) {
+                case MSG_WHAT_START_OPTERATE:
+                    mOnOperationResultListener.onStartOperate();
+                    return false;
+                /*
+                 * 引导服务器
+                 */
+                case ServerConfig.REQUEST_RESULT_BOOTSTRAP_SUCCESS:
+                    break;
+                case ServerConfig.REQUEST_RESULT_BOOTSTRAP_FAILURE:
+                    break;
+                case ServerConfig.REQUEST_RESULT_BOOTSTRAP_TIMEOUT:
+                    break;
+
+                /*
+                 * 注册
+                 */
+                case ServerConfig.REQUEST_RESULT_REGISTRATION_SUCCESS:
+                    mClientState = State.REGISTERED;
+                    mRegistrationId = data.getString("registrationId");
+                    resultMsg = mRegistrationId;
+                    break;
+                case ServerConfig.REQUEST_RESULT_REGISTRATION_FAILURE:
+                case ServerConfig.REQUEST_RESULT_REGISTRATION_TIMEOUT:
+                    break;
+
+                /*
+                 * 更新
+                 */
+                case ServerConfig.REQUEST_RESULT_UPDATE_SUCCESS:
+                    break;
+                case ServerConfig.REQUEST_RESULT_UPDATE_FAILURE:
+                    break;
+                case ServerConfig.REQUEST_RESULT_UPDATE_TIMEOUT:
+                    break;
+
+                /*
+                 * 注销
+                 */
+                case ServerConfig.REQUEST_RESULT_DEREGISTRATION_SUCCUSS:
+                case ServerConfig.REQUEST_RESULT_DEREGISTRATION_FAILURE:
+                case ServerConfig.REQUEST_RESULT_DEREGISTRATION_TIMEOUT:
+                    mRegistrationId = null;
+                    mClient = null;
+                    break;
+            }
+            mOnOperationResultListener.onOperateResult(what, resultMsg);
+            return false;
+        }
+    });
+
     @Override
     public void onCreate() {
         super.onCreate();
+        mContext = getApplicationContext();
         DebugLog.d("ClientService.onCreate ==>");
         mPreferences = getSharedPreferences(ServerConfig.NOTIFY_PERIOD_PREFERENCES, Context.MODE_PRIVATE);
+        registerReceiver();
     }
 
     @Override
     public IBinder onBind(Intent intent) {
         DebugLog.d("ClientService.onBind ==>");
         return new LeshanBinder();
+    }
+
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+        }
+    };
+    private IntentFilter mFilter;
+    private void registerReceiver() {
+        mFilter = new IntentFilter();
+        mFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        mFilter.addAction("android.net.wifi.WIFI_STATE_CHANGED");
+        mFilter.addAction("android.net.wifi.STATE_CHANGE");
+        mContext.registerReceiver(mReceiver, mFilter);
     }
 
     @Override
@@ -111,6 +214,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
     public void onDestroy() {
         DebugLog.d("ClientService.onDestroy ==>");
         super.onDestroy();
+        unregisterReceiver(mReceiver);
     }
 
     public class LeshanBinder extends Binder {
@@ -120,49 +224,60 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
     }
 
     @Override
-    public void register(final int serverId) {
+    public void register() {
+        if (!TextUtils.isEmpty(mRegistrationId)) {
+            mOnOperationResultListener.onOperateReject("Client has already registed!");
+            return;
+        }
+
         new Thread(new Runnable() {
             @Override
             public void run() {
-                checkParams(serverId);
+                mHandler.sendEmptyMessage(MSG_WHAT_START_OPTERATE);
+                checkParams();
             }
         }).start();
     }
 
     @Override
     public void destroy() {
+        if (TextUtils.isEmpty(mRegistrationId)) {
+            mOnOperationResultListener.onOperateReject("Client has already been destoryed");
+            return;
+        }
+        mOnOperationResultListener.onStartOperate();
         new StopClientTask().execute();
     }
 
-    public void checkParams(int serverId) {
+    public void checkParams() {
         /**---------------------本地服务器设置----------------*/
 //        if (serverId == SERVER_ID_LOCAL) {
-            String endpoint = "Phone-Blue-Client";
+        String endpoint = "Phone-Blue-Client";
 
-            // Get server URI
-            String serverURI = "coap://10.0.2.2:5484"; //+ LwM2m.DEFAULT_COAP_PORT;
+        // Get server URI
+        String serverURI = "coap://10.0.2.2:5484"; //+ LwM2m.DEFAULT_COAP_PORT;
 
-            // get security info
-            byte[] pskIdentity = null;
-            byte[] pskKey = null;
+        // get security info
+        byte[] pskIdentity = null;
+        byte[] pskKey = null;
 
-            // get local address
-            String localAddress = null;
-            int localPort = 0;
+        // get local address
+        String localAddress = null;
+        int localPort = 0;
 
-            // get secure local address
-            String secureLocalAddress = null;
-            int secureLocalPort = 0;
+        // get secure local address
+        String secureLocalAddress = null;
+        int secureLocalPort = 0;
 
-            Float latitude = null;
-            Float longitude = null;
-            Float scaleFactor = 1.0f;
+        Float latitude = null;
+        Float longitude = null;
+        Float scaleFactor = 1.0f;
 //
 //            createAndStartClient(endpoint, localAddress, localPort, secureLocalAddress, secureLocalPort, false,
 //                    serverURI, pskIdentity, pskKey, latitude, longitude, scaleFactor);
 //        } else if (serverId == SERVER_ID_REMOTE) {
 
-            /**--------------爱立信服务器设置-------------*/
+        /**--------------爱立信服务器设置-------------*/
 //            String endpoint = ServerConfig.END_POINT;
 //
 //            // Get server URI
@@ -183,8 +298,8 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
 //            Float latitude = null;
 //            Float longitude = null;
 //            Float scaleFactor = 1.0f;
-            createAndStartClient(endpoint, localAddress, localPort, secureLocalAddress, secureLocalPort, false,
-                    serverURI, pskIdentity, pskKey, latitude, longitude, scaleFactor);
+        createAndStartClient(endpoint, localAddress, localPort, secureLocalAddress, secureLocalPort, false,
+                serverURI, pskIdentity, pskKey, latitude, longitude, scaleFactor);
 //        }
     }
 
@@ -252,7 +367,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
                 builder.disableUnsecuredEndpoint();
         }
         mClient = builder.build();
-        mClient.addObserver(mObserver);
+        mClient.addObserver(this);
 
         // Start the client
         mClient.start();
@@ -260,7 +375,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
 
     private List<LwM2mObjectEnabler> setInstancesForObject() {
         List<LwM2mObjectEnabler> enablers = new ArrayList<LwM2mObjectEnabler>();
-        for (int objectId:objectClasses.keySet()) {
+        for (int objectId : objectClasses.keySet()) {
             try {
                 ExtendBaseInstanceEnabler baseInstance = (ExtendBaseInstanceEnabler) objectClasses.get(objectId).newInstance();
                 baseInstance.setContext(mContext);
@@ -293,32 +408,9 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         }
     }
 
-    public void setObserver(LwM2mClientObserver observer) {
-        this.mObserver = observer;
-    }
-
-    public void setContext(Context context) {
-        mContext = context;
-    }
-
-    @Override
-    public boolean isClientStarted() {
-        return mClient != null;
-    }
-
-    @Override
-    public void setRegistrationId(String registrationId) {
-        this.mRegistrationId = registrationId;
-    }
-
-    @Override
-    public String getRegistrationId() {
-        return mRegistrationId;
-    }
-
-
     /**
      * 当服务端传递过来数据上报周期信息时，在这处理
+     *
      * @param objectId
      * @param period
      */
@@ -329,7 +421,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
             //保存period
             setIntervalInSec(objectId, (int) period);
             LwM2mInstanceEnabler[] enablers = instances.get(objectId);
-            for (LwM2mInstanceEnabler enabler: enablers) {
+            for (LwM2mInstanceEnabler enabler : enablers) {
                 if (enabler instanceof ExtendBaseInstanceEnabler) {
                     //将period的值设置给所有Instance,当Server observe这个实例的某个资源后，
                     // 这个实例会每隔period秒，上报一次resource的值
@@ -369,9 +461,9 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
      */
     private void stopInstanceNotifyThread() {
         Map<Integer, LwM2mInstanceEnabler[]> instances = initializer.getInstances();
-        for (Integer objectId: instances.keySet()) {
+        for (Integer objectId : instances.keySet()) {
             LwM2mInstanceEnabler[] enablers = instances.get(objectId);
-            for (LwM2mInstanceEnabler enabler: enablers) {
+            for (LwM2mInstanceEnabler enabler : enablers) {
 //                DebugLog.d("stopInstanceNotifyThread objectId = " + objectId + ", enabler = " + enabler);
                 if (enabler instanceof ExtendBaseInstanceEnabler) {
                     ExtendBaseInstanceEnabler e = (ExtendBaseInstanceEnabler) enabler;
@@ -379,6 +471,81 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
                 }
             }
         }
+    }
+
+    private void sendMessage(int what, Bundle data) {
+        Message message = mHandler.obtainMessage();
+        message.what = what;
+        message.setData(data);
+        mHandler.sendMessage(message);
+    }
+
+    @Override
+    public void onBootstrapSuccess(ServerInfo serverInfo) {
+        sendMessage(ServerConfig.REQUEST_RESULT_BOOTSTRAP_SUCCESS, null);
+    }
+
+    @Override
+    public void onBootstrapFailure(ServerInfo serverInfo, ResponseCode responseCode, String s) {
+        sendMessage(ServerConfig.REQUEST_RESULT_BOOTSTRAP_FAILURE, null);
+    }
+
+    @Override
+    public void onBootstrapTimeout(ServerInfo serverInfo) {
+        sendMessage(ServerConfig.REQUEST_RESULT_BOOTSTRAP_TIMEOUT, null);
+    }
+
+    @Override
+    public void onRegistrationSuccess(DmServerInfo dmServerInfo, String s) {
+        DebugLog.d("onRegistrationSuccess");
+        Bundle bundle = new Bundle();
+        bundle.putString("registrationId", s);
+        sendMessage(ServerConfig.REQUEST_RESULT_REGISTRATION_SUCCESS, bundle);
+    }
+
+    @Override
+    public void onRegistrationFailure(DmServerInfo dmServerInfo, ResponseCode responseCode, String s) {
+        Bundle bundle = new Bundle();
+        bundle.putString("responseCode", responseCode.getCode() + "");
+        bundle.putString("responseName", responseCode.getName() + "");
+        sendMessage(ServerConfig.REQUEST_RESULT_REGISTRATION_FAILURE, bundle);
+        DebugLog.d("onRegistrationFailure");
+    }
+
+    @Override
+    public void onRegistrationTimeout(DmServerInfo dmServerInfo) {
+        sendMessage(ServerConfig.REQUEST_RESULT_REGISTRATION_TIMEOUT, null);
+    }
+
+    @Override
+    public void onUpdateSuccess(DmServerInfo dmServerInfo, String s) {
+        sendMessage(ServerConfig.REQUEST_RESULT_UPDATE_SUCCESS, null);
+    }
+
+    @Override
+    public void onUpdateFailure(DmServerInfo dmServerInfo, ResponseCode responseCode, String s) {
+        sendMessage(ServerConfig.REQUEST_RESULT_UPDATE_FAILURE, null);
+    }
+
+    @Override
+    public void onUpdateTimeout(DmServerInfo dmServerInfo) {
+        sendMessage(ServerConfig.REQUEST_RESULT_UPDATE_TIMEOUT, null);
+    }
+
+    @Override
+    public void onDeregistrationSuccess(DmServerInfo dmServerInfo, String s) {
+        sendMessage(ServerConfig.REQUEST_RESULT_DEREGISTRATION_SUCCUSS, null);
+
+    }
+
+    @Override
+    public void onDeregistrationFailure(DmServerInfo dmServerInfo, ResponseCode responseCode, String s) {
+        sendMessage(ServerConfig.REQUEST_RESULT_DEREGISTRATION_FAILURE, null);
+    }
+
+    @Override
+    public void onDeregistrationTimeout(DmServerInfo dmServerInfo) {
+        sendMessage(ServerConfig.REQUEST_RESULT_DEREGISTRATION_TIMEOUT, null);
     }
 
     class StopClientTask extends AsyncTask<Void, Void, Void> {
@@ -392,6 +559,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
             }
             return null;
         }
+
     }
 
     /**

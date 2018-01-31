@@ -5,10 +5,8 @@ package com.cwtcn.leshanandroidlib.model;
  */
 
 public interface IClientModel {
-    void register(int serverId);
+    void register();
     void destroy();
     void updateResource(int objectId, ResourceBean bean, String newValue);
-    boolean isClientStarted();
-    void setRegistrationId(String registrationId);
-    String getRegistrationId();
+    void setOnOperationResultListener(ClientService.OnOperationResultListener listener);
 }

@@ -8,11 +8,8 @@ import android.graphics.Bitmap;
  */
 
 public interface IMainPresenter {
-    void register(int serverId);
-    void destroy();
+    void register();
+    void destroyClient();
     void updateLocation();
-    void updateTemperature();
-    void unbindService();
-    void scanQRCode(Context context);
     Bitmap encodeQRCode(String content, int width, int height);
 }

@@ -39,7 +39,7 @@ import static org.eclipse.leshan.LwM2mId.LOCATION;
 /**
  * Created by leizhiheng on 2018/1/16.
  */
-public class MainPresenter implements IMainPresenter, LwM2mClientObserver {
+public class MainPresenter implements IMainPresenter, ClientService.OnOperationResultListener {
     private IMainView mView;
     private IClientModel mModel;
     private Context mContext;
@@ -50,96 +50,21 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver {
             DebugLog.d("onServiceConnected");
             ClientService.LeshanBinder binder = (ClientService.LeshanBinder) service;
             ClientService ser = ((ClientService.LeshanBinder) service).getService();
-            ser.setContext(mContext);
-            ser.setObserver(MainPresenter.this);
+
             mModel = ser;
-            if (!TextUtils.isEmpty(mModel.getRegistrationId())) {
-                mView.updateClientStatus(true, mModel.getRegistrationId());
-            }
+            mModel.setOnOperationResultListener(MainPresenter.this);
+            mModel.register();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-
+            mModel = null;
         }
     };
-
-    private Handler mHandler = new Handler(new Handler.Callback() {
-        @Override
-        public boolean handleMessage(Message msg) {
-            mView.hideProgress();
-            int what = msg.what;
-            Bundle data = msg.getData();
-
-            switch (what) {
-                case ServerConfig.REQUEST_RESULT_BOOTSTRAP_SUCCESS:
-                    break;
-                case ServerConfig.REQUEST_RESULT_BOOTSTRAP_FAILURE:
-                    break;
-                case ServerConfig.REQUEST_RESULT_BOOTSTRAP_TIMEOUT:
-                    break;
-                case ServerConfig.REQUEST_RESULT_REGISTRATION_SUCCESS:
-                    String registrationId = data.getString("registrationId");
-                    mView.updateClientStatus(true, registrationId);
-                    mModel.setRegistrationId(registrationId);
-                    break;
-                case ServerConfig.REQUEST_RESULT_REGISTRATION_FAILURE:
-                    String responseCode = data.getString("responseCode");
-                    String responseName = data.getString("responseName");
-                    mModel.setRegistrationId(null);
-                    mView.showToast("Requst result code: " + what + ", responseCode:" + responseCode + ", responseName:" + responseName);
-                    break;
-                case ServerConfig.REQUEST_RESULT_REGISTRATION_TIMEOUT:
-                    break;
-                case ServerConfig.REQUEST_RESULT_UPDATE_SUCCESS:
-
-                    break;
-                case ServerConfig.REQUEST_RESULT_UPDATE_FAILURE:
-                    break;
-                case ServerConfig.REQUEST_RESULT_UPDATE_TIMEOUT:
-                    break;
-                case ServerConfig.REQUEST_RESULT_DEREGISTRATION_SUCCUSS:
-                    mModel.setRegistrationId(null);
-                    mView.updateClientStatus(false, null);
-                    break;
-                case ServerConfig.REQUEST_RESULT_DEREGISTRATION_FAILURE:
-                    break;
-                case ServerConfig.REQUEST_RESULT_DEREGISTRATION_TIMEOUT:
-                    break;
-            }
-            return false;
-        }
-    });
 
     public MainPresenter(IMainView view, Context context) {
         this.mView = view;
         mContext = context;
-        startService();
-    }
-
-    /**
-     * 开启服务
-     */
-    private void startService() {
-        Intent intent = new Intent(mContext, ClientService.class);
-        mContext.startService(intent);
-        mContext.bindService(intent, mConn, Context.BIND_AUTO_CREATE);
-    }
-
-    /**
-     * 结束服务
-     */
-    private void stopService() {
-        Intent intent = new Intent(mContext, ClientService.class);
-        //mContext.stopService(intent);
-    }
-
-    public void unbindService() {
-        mContext.unbindService(mConn);
-    }
-
-    @Override
-    public void scanQRCode(Context context) {
     }
 
     /**
@@ -173,26 +98,21 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver {
         return null;
     }
 
-    private int serverId;
-
     @Override
-    public void register(int serverId) {
-        this.serverId = serverId;
-
-        if (!TextUtils.isEmpty(mModel.getRegistrationId())) {
-            mView.showToast("Client has registered!");
+    public void register() {
+        Intent intent = new Intent(mContext, ClientService.class);
+        mContext.startService(intent);
+        if (mModel == null) {
+            mContext.bindService(intent, mConn, Context.BIND_AUTO_CREATE);
         } else {
-            mView.showProgress();
-            mModel.register(serverId);
+            mModel.register();
         }
     }
 
     @Override
-    public void destroy() {
-        if (mModel != null && mModel.isClientStarted()) {
-            mModel.destroy();
-            mView.showProgress();
-            //stopService();
+    public void destroyClient() {
+        if (mModel != null) {
+            mModel.destroy();//取消对服务器的注册
         } else {
             mView.showToast("客户端已注销");
         }
@@ -233,80 +153,66 @@ public class MainPresenter implements IMainPresenter, LwM2mClientObserver {
     }
 
     @Override
-    public void updateTemperature() {
-
-    }
-
-    private void sendMessage(int what, Bundle data) {
-        Message message = mHandler.obtainMessage();
-        message.what = what;
-        message.setData(data);
-        mHandler.sendMessage(message);
+    public void onStartOperate() {
+        mView.showProgress();
     }
 
     @Override
-    public void onBootstrapSuccess(ServerInfo serverInfo) {
-        sendMessage(ServerConfig.REQUEST_RESULT_BOOTSTRAP_SUCCESS, null);
+    public void onOperateReject(String rejectReason) {
+        mView.showToast(rejectReason);
     }
 
     @Override
-    public void onBootstrapFailure(ServerInfo serverInfo, ResponseCode responseCode, String s) {
-        sendMessage(ServerConfig.REQUEST_RESULT_BOOTSTRAP_FAILURE, null);
-    }
+    public void onOperateResult(int resultCode, String msg) {
+        mView.hideProgress();
+        switch (resultCode) {
+                /*
+                 * 引导服务器
+                 */
+            case ServerConfig.REQUEST_RESULT_BOOTSTRAP_SUCCESS:
+                break;
+            case ServerConfig.REQUEST_RESULT_BOOTSTRAP_FAILURE:
+                break;
+            case ServerConfig.REQUEST_RESULT_BOOTSTRAP_TIMEOUT:
+                break;
 
-    @Override
-    public void onBootstrapTimeout(ServerInfo serverInfo) {
-        sendMessage(ServerConfig.REQUEST_RESULT_BOOTSTRAP_TIMEOUT, null);
-    }
+                /*
+                 * 注册
+                 */
+            case ServerConfig.REQUEST_RESULT_REGISTRATION_SUCCESS:
+                mView.updateClientStatus(true, msg);
+                break;
+            case ServerConfig.REQUEST_RESULT_REGISTRATION_FAILURE:
+                msg = "Registration Failed!";
+                break;
+            case ServerConfig.REQUEST_RESULT_REGISTRATION_TIMEOUT:
+                msg = "Registration Timeout!";
+                break;
 
-    @Override
-    public void onRegistrationSuccess(DmServerInfo dmServerInfo, String s) {
-        Bundle bundle = new Bundle();
-        bundle.putString("registrationId", s);
-        sendMessage(ServerConfig.REQUEST_RESULT_REGISTRATION_SUCCESS, bundle);
-    }
+                /*
+                 * 更新
+                 */
+            case ServerConfig.REQUEST_RESULT_UPDATE_SUCCESS:
+                break;
+            case ServerConfig.REQUEST_RESULT_UPDATE_FAILURE:
+                break;
+            case ServerConfig.REQUEST_RESULT_UPDATE_TIMEOUT:
+                break;
 
-    @Override
-    public void onRegistrationFailure(DmServerInfo dmServerInfo, ResponseCode responseCode, String s) {
-        Bundle bundle = new Bundle();
-        bundle.putString("responseCode", responseCode.getCode() + "");
-        bundle.putString("responseName", responseCode.getName() + "");
-        sendMessage(ServerConfig.REQUEST_RESULT_REGISTRATION_FAILURE, bundle);
-    }
-
-    @Override
-    public void onRegistrationTimeout(DmServerInfo dmServerInfo) {
-        sendMessage(ServerConfig.REQUEST_RESULT_REGISTRATION_TIMEOUT, null);
-    }
-
-    @Override
-    public void onUpdateSuccess(DmServerInfo dmServerInfo, String s) {
-        sendMessage(ServerConfig.REQUEST_RESULT_UPDATE_SUCCESS, null);
-    }
-
-    @Override
-    public void onUpdateFailure(DmServerInfo dmServerInfo, ResponseCode responseCode, String s) {
-        sendMessage(ServerConfig.REQUEST_RESULT_UPDATE_FAILURE, null);
-    }
-
-    @Override
-    public void onUpdateTimeout(DmServerInfo dmServerInfo) {
-        sendMessage(ServerConfig.REQUEST_RESULT_UPDATE_TIMEOUT, null);
-    }
-
-    @Override
-    public void onDeregistrationSuccess(DmServerInfo dmServerInfo, String s) {
-        sendMessage(ServerConfig.REQUEST_RESULT_DEREGISTRATION_SUCCUSS, null);
-
-    }
-
-    @Override
-    public void onDeregistrationFailure(DmServerInfo dmServerInfo, ResponseCode responseCode, String s) {
-        sendMessage(ServerConfig.REQUEST_RESULT_DEREGISTRATION_FAILURE, null);
-    }
-
-    @Override
-    public void onDeregistrationTimeout(DmServerInfo dmServerInfo) {
-        sendMessage(ServerConfig.REQUEST_RESULT_DEREGISTRATION_TIMEOUT, null);
+                /*
+                 * 注销
+                 */
+            case ServerConfig.REQUEST_RESULT_DEREGISTRATION_SUCCUSS:
+                mView.updateClientStatus(false, null);
+                break;
+            case ServerConfig.REQUEST_RESULT_DEREGISTRATION_FAILURE:
+            case ServerConfig.REQUEST_RESULT_DEREGISTRATION_TIMEOUT:
+                msg = "Client Disconnected!";
+                mView.updateClientStatus(false, null);
+                break;
+        }
+        if (!TextUtils.isEmpty(msg)) {
+            mView.showToast(msg);
+        }
     }
 }
