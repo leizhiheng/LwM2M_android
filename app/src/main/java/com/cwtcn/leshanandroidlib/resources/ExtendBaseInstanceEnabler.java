@@ -17,18 +17,38 @@ import java.util.HashMap;
  * Created by leizhiheng on 2018/1/18.
  */
 
-public class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
+public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
 
     protected Context mContext;
-    private int objectId;
+    protected int objectId;
     /*服务器observe后，Notify间隔时间*/
-    private int intervalInSec = -1;
-    private boolean startedObseve = false;
-    private HashMap<Integer, Long> observedResource;
+    protected int intervalInSec = -1;
+    protected boolean startedObseve = false;
+    protected HashMap<Integer, Long> observedResource;
 
     protected OnWriteReadListener mOnWriteReadListener;
     public void setOnWriteNotifyPeriodListener(OnWriteReadListener listener) {
         this.mOnWriteReadListener = listener;
+    }
+
+    /**
+     * 当InstanceEnabler被创建时，ClientService会调用这个方法
+     */
+    public abstract void onCreate(Context context);
+
+    /**
+     * 当InstanceEnabler被之前，ClientService会调用这个方法
+     */
+    public abstract void onDestory();
+
+    /**
+     * 当ClientService定位成功后，调用该方法，定位结果发送给InstanceEnabler。
+     * 具体的操作可以在子类中实现
+     * @param lat 经度
+     * @param lon 维度
+     * @param accuracy 精度
+     */
+    public void setLocateResult(double lat, double lon, String accuracy) {
     }
 
     @Override
@@ -43,9 +63,10 @@ public class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
     @Override
     public void notifyObserve(int resourceId) {
         DebugLog.d("notifyObserve resourceId = " + resourceId);
-        if (intervalInSec < 0) {
-            intervalInSec = mOnWriteReadListener.readPeriod(objectId);
-        }
+//        if (intervalInSec < 0) {
+//            intervalInSec = mOnWriteReadListener.readPeriod(objectId);
+//        }
+        intervalInSec = 10;
         if (observedResource == null) {
             startedObseve = true;
             observedResource = new HashMap<Integer, Long>();
@@ -54,9 +75,6 @@ public class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
         observedResource.put(resourceId, getNowMilliSecs());
     }
 
-    public void setContext(Context context) {
-        mContext = context;
-    }
 
     public void setObjectId(int objectId) {
         this.objectId = objectId;

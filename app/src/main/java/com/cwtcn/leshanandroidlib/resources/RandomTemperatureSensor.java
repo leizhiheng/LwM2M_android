@@ -1,5 +1,6 @@
 package com.cwtcn.leshanandroidlib.resources;
 
+import android.content.Context;
 import android.os.Debug;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
@@ -42,6 +43,16 @@ public class RandomTemperatureSensor extends ExtendBaseInstanceEnabler {
                 adjustTemperature();
             }
         }, 2, 2, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public void onCreate(Context context) {
+
+    }
+
+    @Override
+    public void onDestory() {
+
     }
 
     @Override

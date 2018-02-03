@@ -1,5 +1,6 @@
 package com.cwtcn.leshanandroidlib.resources;
 
+import android.content.Context;
 import android.widget.Toast;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
@@ -36,6 +37,16 @@ public class NoDisturbMode extends ExtendBaseInstanceEnabler {
     public static final String KEY_NO_DISTURB_MODE_MSG = "NoDisturbModeMsg";
     public static final int EVENT_IDENTIFIER = 5823;
     public static final int TEXT = 5527;
+
+    @Override
+    public void onCreate(Context context) {
+
+    }
+
+    @Override
+    public void onDestory() {
+
+    }
 
     @Override
     public synchronized ReadResponse read(int resourceId) {

@@ -31,7 +31,7 @@ import com.cwtcn.leshanandroidlib.presenter.IMainPresenter;
 import com.cwtcn.leshanandroidlib.presenter.MainPresenter;
 import com.cwtcn.leshanandroidlib.resources.RandomTemperatureSensor;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
-import com.cwtcn.leshanandroidlib.utils.LocationUtil;
+import com.cwtcn.leshanandroidlib.utils.locationutils.LocationUtil;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -95,7 +95,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         mImageView = (ImageView) findViewById(R.id.imageview_qrcode);
 
         mListDevice = (ListView) findViewById(R.id.resource_list_device);
-//        mListDevice.setVisibility(View.GONE);
         mListLocation = (ListView) findViewById(R.id.resource_list_location);
         mListTemperature = (ListView) findViewById(R.id.resource_list_temperature);
         mListDevice.setAdapter(new ResourceAdapter(mDeviceResources));
@@ -104,6 +103,10 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         mListDevice.setOnItemClickListener(this);
         mListLocation.setOnItemClickListener(this);
         mListTemperature.setOnItemClickListener(this);
+
+        mListDevice.setVisibility(View.GONE);
+        mListLocation.setVisibility(View.GONE);
+        mListTemperature.setVisibility(View.GONE);
 
         mClientStatus = (TextView) findViewById(R.id.client_status);
     }
@@ -265,9 +268,10 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
     }
 
     public void register() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.WRITE_CONTACTS, Manifest.permission.READ_CONTACTS},
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_CONTACTS, Manifest.permission.READ_CONTACTS,
+                    Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},
                     PERMISSIONS_REQUEST_CONTACT);
         } else {
             mPresenter.register();

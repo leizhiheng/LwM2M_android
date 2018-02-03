@@ -6,10 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.location.Location;
-import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.text.TextUtils;
 
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
@@ -17,18 +14,14 @@ import com.cwtcn.leshanandroidlib.model.ClientService;
 import com.cwtcn.leshanandroidlib.model.IClientModel;
 import com.cwtcn.leshanandroidlib.model.ResourceBean;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
-import com.cwtcn.leshanandroidlib.utils.LocationUtil;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnOperationResultListener;
+import com.cwtcn.leshanandroidlib.utils.locationutils.LocationUtil;
 import com.cwtcn.leshanandroidlib.view.IMainView;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
-
-import org.eclipse.leshan.ResponseCode;
-import org.eclipse.leshan.client.observer.LwM2mClientObserver;
-import org.eclipse.leshan.client.servers.DmServerInfo;
-import org.eclipse.leshan.client.servers.ServerInfo;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +32,7 @@ import static org.eclipse.leshan.LwM2mId.LOCATION;
 /**
  * Created by leizhiheng on 2018/1/16.
  */
-public class MainPresenter implements IMainPresenter, ClientService.OnOperationResultListener {
+public class MainPresenter implements IMainPresenter, OnOperationResultListener {
     private IMainView mView;
     private IClientModel mModel;
     private Context mContext;

@@ -1,5 +1,7 @@
 package com.cwtcn.leshanandroidlib.resources;
 
+import android.content.Context;
+
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
 import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
@@ -21,6 +23,16 @@ public class AddressableTextDisplay extends ExtendBaseInstanceEnabler {
 
     public void setOnWriteNotifyPeriodListener(OnWriteReadListener listener) {
         this.mOnWriteNotifyPeriodListener = listener;
+    }
+
+    @Override
+    public void onCreate(Context context) {
+
+    }
+
+    @Override
+    public void onDestory() {
+
     }
 
     @Override

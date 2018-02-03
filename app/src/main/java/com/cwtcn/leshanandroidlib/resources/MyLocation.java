@@ -1,14 +1,11 @@
 package com.cwtcn.leshanandroidlib.resources;
 
 import android.content.Context;
-import android.util.Log;
-import android.widget.Toast;
 
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.locationutils.WifiLocateUtils;
 
-import org.eclipse.leshan.client.object.Server;
-import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
 import org.eclipse.leshan.core.node.LwM2mResource;
 import org.eclipse.leshan.core.response.ObserveResponse;
 import org.eclipse.leshan.core.response.ReadResponse;
@@ -19,10 +16,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Observable;
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.CountDownLatch;
 
 public class MyLocation extends ExtendBaseInstanceEnabler {
 
@@ -33,15 +28,22 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
     private float latitude;
     private float longitude;
     private float scaleFactor;
+    private WifiLocateUtils mWifiLocUtils;
     private Date timestamp;
     private Map<Integer, Long> observedResource = new HashMap<Integer, Long>();
-    public void setContext(Context context) {
-        this.mContext = context;
+
+    private CountDownLatch mCountDownLatch;
+
+    @Override
+    public void onCreate(Context context) {
+        mContext = context;
     }
 
-    public MyLocation() {
-        this(null, null, 1.0f);
+    @Override
+    public void onDestory() {
     }
+
+    public MyLocation() {}
 
     public MyLocation(Float latitude, Float longitude, float scaleFactor) {
         if (latitude != null) {
@@ -59,19 +61,52 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
     }
 
     @Override
+    public ObserveResponse observe(int resourceid) {
+        notifyObserve(resourceid);
+        return super.observe(resourceid);
+    }
+
+    @Override
     public ReadResponse read(int resourceid) {
-        LOG.info("Read on Location Resource " + resourceid);
-        System.out.print("leshan.MyLocation.read() resourceId = " + resourceid);
+        DebugLog.d("leshan.MyLocation.read() resourceId = " + resourceid);
+        if (mCountDownLatch == null) {
+            mCountDownLatch = new CountDownLatch(1);
+        }
         switch (resourceid) {
             case 0:
+                mOnWriteReadListener.requestLocate(objectId, this);
+                try {
+                    DebugLog.d("mCountDownLatch.aweit getLatitude begin");
+                    //在主线程中获取定位，所以这里要等主线程定位完成，然后在返回read结果。
+                    mCountDownLatch.await();
+                    DebugLog.d("mCountDownLatch.aweit getLatitude end");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 return ReadResponse.success(resourceid, getLatitude());
             case 1:
+                try {
+                    DebugLog.d("mCountDownLatch.aweit getLongitude begin");
+                    //在主线程中获取定位，所以这里要等主线程定位完成，然后在返回read结果。
+                    mCountDownLatch.await();
+                    DebugLog.d("mCountDownLatch.aweit getLongitude end");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 return ReadResponse.success(resourceid, getLongitude());
             case 5:
                 return ReadResponse.success(resourceid, getTimestamp());
             default:
                 return super.read(resourceid);
         }
+    }
+
+    @Override
+    public void setLocateResult(double lat, double lon, String msg) {
+        latitude = (float) lat;
+        longitude = (float) lon;
+        DebugLog.d("mCountDownLatch.countDown");
+        mCountDownLatch.countDown();
     }
 
     @Override
@@ -101,23 +136,6 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
         }
     }
 
-    public void moveLocation(String nextMove) {
-        switch (nextMove.charAt(0)) {
-            case 'w':
-                moveLatitude(1.0f);
-                break;
-            case 'a':
-                moveLongitude(-1.0f);
-                break;
-            case 's':
-                moveLatitude(-1.0f);
-                break;
-            case 'd':
-                moveLongitude(1.0f);
-                break;
-        }
-    }
-
     public void updateLocation(int resourceId, float newValue) {
         timestamp = new Date();
         if (resourceId == 0) {
@@ -129,30 +147,22 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
         }
     }
 
-    private void moveLatitude(float delta) {
-        latitude = latitude + delta * scaleFactor;
-        timestamp = new Date();
-        fireResourcesChange(0, 5);
-    }
-
-    private void moveLocation(float delta) {
-
-    }
-
-    private void moveLongitude(float delta) {
-        longitude = longitude + delta * scaleFactor;
+    private void moveLongitude() {
         timestamp = new Date();
         fireResourcesChange(1, 5);
     }
 
+    private void moveLatitude() {
+        timestamp = new Date();
+        fireResourcesChange(0, 5);
+    }
+
     public float getLatitude() {
-        latitude += 1;
         DebugLog.d("MyLocation.getLatitude==> latitude:" + latitude);
         return latitude;
     }
 
     public float getLongitude() {
-        longitude += 1;
         DebugLog.d("MyLocation.getLongitude==> longitude:" + longitude);
         return longitude;
     }

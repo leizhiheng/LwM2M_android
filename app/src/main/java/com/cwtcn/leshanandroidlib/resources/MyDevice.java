@@ -1,5 +1,14 @@
 package com.cwtcn.leshanandroidlib.resources;
 
+import android.content.Context;
+import android.util.Log;
+
+import com.amap.api.location.AMapLocation;
+import com.amap.api.location.AMapLocationClient;
+import com.amap.api.location.AMapLocationClientOption;
+import com.amap.api.location.AMapLocationListener;
+import com.cwtcn.leshanandroidlib.utils.DebugLog;
+
 import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
 import org.eclipse.leshan.core.model.ResourceModel.Type;
 import org.eclipse.leshan.core.node.LwM2mResource;
@@ -37,45 +46,55 @@ public class MyDevice extends ExtendBaseInstanceEnabler {
     }
 
     @Override
+    public void onCreate(Context context) {
+        mContext = context;
+    }
+
+    @Override
+    public void onDestory() {
+
+    }
+
+    @Override
     public ReadResponse read(int resourceid) {
         LOG.info("Read on Device Resource " + resourceid);
         switch (resourceid) {
-        case 0:
-            return ReadResponse.success(resourceid, getManufacturer());
-        case 1:
-            return ReadResponse.success(resourceid, getModelNumber());
-        case 2:
-            return ReadResponse.success(resourceid, getSerialNumber());
-        case 3:
-            return ReadResponse.success(resourceid, getFirmwareVersion());
-        case 9:
-            return ReadResponse.success(resourceid, getBatteryLevel());
-        case 10:
-            return ReadResponse.success(resourceid, getMemoryFree());
-        case 11:
-            Map<Integer, Long> errorCodes = new HashMap<>();
-            errorCodes.put(0, getErrorCode());
-            return ReadResponse.success(resourceid, errorCodes, Type.INTEGER);
-        case 13:
-            return ReadResponse.success(resourceid, getCurrentTime());
-        case 14:
-            return ReadResponse.success(resourceid, getUtcOffset());
-        case 15:
-            return ReadResponse.success(resourceid, getTimezone());
-        case 16:
-            return ReadResponse.success(resourceid, getSupportedBinding());
-        case 17:
-            return ReadResponse.success(resourceid, getDeviceType());
-        case 18:
-            return ReadResponse.success(resourceid, getHardwareVersion());
-        case 19:
-            return ReadResponse.success(resourceid, getSoftwareVersion());
-        case 20:
-            return ReadResponse.success(resourceid, getBatteryStatus());
-        case 21:
-            return ReadResponse.success(resourceid, getMemoryTotal());
-        default:
-            return super.read(resourceid);
+            case 0:
+                return ReadResponse.success(resourceid, getManufacturer());
+            case 1:
+                return ReadResponse.success(resourceid, getModelNumber());
+            case 2:
+                return ReadResponse.success(resourceid, getSerialNumber());
+            case 3:
+                return ReadResponse.success(resourceid, getFirmwareVersion());
+            case 9:
+                return ReadResponse.success(resourceid, getBatteryLevel());
+            case 10:
+                return ReadResponse.success(resourceid, getMemoryFree());
+            case 11:
+                Map<Integer, Long> errorCodes = new HashMap<>();
+                errorCodes.put(0, getErrorCode());
+                return ReadResponse.success(resourceid, errorCodes, Type.INTEGER);
+            case 13:
+                return ReadResponse.success(resourceid, getCurrentTime());
+            case 14:
+                return ReadResponse.success(resourceid, getUtcOffset());
+            case 15:
+                return ReadResponse.success(resourceid, getTimezone());
+            case 16:
+                return ReadResponse.success(resourceid, getSupportedBinding());
+            case 17:
+                return ReadResponse.success(resourceid, getDeviceType());
+            case 18:
+                return ReadResponse.success(resourceid, getHardwareVersion());
+            case 19:
+                return ReadResponse.success(resourceid, getSoftwareVersion());
+            case 20:
+                return ReadResponse.success(resourceid, getBatteryStatus());
+            case 21:
+                return ReadResponse.success(resourceid, getMemoryTotal());
+            default:
+                return super.read(resourceid);
         }
     }
 
@@ -91,18 +110,18 @@ public class MyDevice extends ExtendBaseInstanceEnabler {
     public WriteResponse write(int resourceid, LwM2mResource value) {
         LOG.info("Write on Device Resource " + resourceid + " value " + value);
         switch (resourceid) {
-        case 13:
-            return WriteResponse.notFound();
-        case 14:
-            setUtcOffset((String) value.getValue());
-            fireResourcesChange(resourceid);
-            return WriteResponse.success();
-        case 15:
-            setTimezone((String) value.getValue());
-            fireResourcesChange(resourceid);
-            return WriteResponse.success();
-        default:
-            return super.write(resourceid, value);
+            case 13:
+                return WriteResponse.notFound();
+            case 14:
+                setUtcOffset((String) value.getValue());
+                fireResourcesChange(resourceid);
+                return WriteResponse.success();
+            case 15:
+                setTimezone((String) value.getValue());
+                fireResourcesChange(resourceid);
+                return WriteResponse.success();
+            default:
+                return super.write(resourceid, value);
         }
     }
 

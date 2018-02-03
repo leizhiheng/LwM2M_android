@@ -13,9 +13,11 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.text.TextUtils;
+import android.widget.Toast;
 
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.resources.AddressableTextDisplay;
+import com.cwtcn.leshanandroidlib.resources.BatteryStatus;
 import com.cwtcn.leshanandroidlib.resources.ContactList;
 import com.cwtcn.leshanandroidlib.resources.ExtendBaseInstanceEnabler;
 import com.cwtcn.leshanandroidlib.resources.ExtendObjectsInitializer;
@@ -25,8 +27,12 @@ import com.cwtcn.leshanandroidlib.resources.MyLocation;
 import com.cwtcn.leshanandroidlib.resources.NoDisturbMode;
 import com.cwtcn.leshanandroidlib.resources.RandomTemperatureSensor;
 import com.cwtcn.leshanandroidlib.resources.SetPoint;
+import com.cwtcn.leshanandroidlib.resources.SosAlert;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnLocateResultListener;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnOperationResultListener;
 import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
+import com.cwtcn.leshanandroidlib.utils.locationutils.GaodeLBSUtils;
 
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.leshan.ResponseCode;
@@ -62,26 +68,28 @@ import static org.eclipse.leshan.client.object.Security.noSecBootstap;
 import static org.eclipse.leshan.client.object.Security.psk;
 import static org.eclipse.leshan.client.object.Security.pskBootstrap;
 
-public class ClientService extends Service implements IClientModel, OnWriteReadListener, LwM2mClientObserver {
+public class ClientService extends Service implements IClientModel, OnWriteReadListener, LwM2mClientObserver, OnLocateResultListener {
     public static final String TAG = "ClientService";
 
     /*添加一个Object第1步：添加model文件*/
     private final static String[] modelPaths = new String[]{
             "3301.xml", "3303.xml", "3308.xml",
-            "3341.xml", "9000.xml", "9001.xml"};
+            "3341.xml", "9000.xml", "9001.xml",
+            "9002.xml", "9003.xml"};
     /*添加一个Object第2步：添加Object对应的类*/
     private final static Map<Integer, Class> objectClasses;
 
     static {
         //cus-表示自定义Object;oma-表示官方定义的Object
         objectClasses = new HashMap<Integer, Class>();
-        objectClasses.put(LOCATION, MyLocation.class);//Location-oma
-        objectClasses.put(3301, IlluminanceSensor.class);//Illuminance-oma
+        //objectClasses.put(3301, IlluminanceSensor.class);//Illuminance-oma
         objectClasses.put(3303, RandomTemperatureSensor.class);//Temperature-oma
         objectClasses.put(3308, SetPoint.class);//Set Point-oma
-        objectClasses.put(3341, AddressableTextDisplay.class);//Addressable Text Display-oma
+        //objectClasses.put(3341, AddressableTextDisplay.class);//Addressable Text Display-oma
         objectClasses.put(9000, ContactList.class);//ContactList-cus
         objectClasses.put(9001, NoDisturbMode.class);//NoDisturbMode-cus
+        objectClasses.put(9002, BatteryStatus.class);//BatteryStatus-cus
+        objectClasses.put(9003, SosAlert.class);//SosAlert-cus
     }
 
     private final static Map<Integer, ExtendBaseInstanceEnabler> baseInstances = new HashMap<Integer, ExtendBaseInstanceEnabler>();
@@ -89,32 +97,29 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
     private Context mContext;
     private ObjectsInitializer initializer;
     private LeshanClient mClient;
+    private MyLocation mLocation;
     private MyDevice mDevice;
 
     private String mRegistrationId;
 
     public static SharedPreferences mPreferences;
-
-    public enum State {NONE, REGISTERING, REGISTERED, DESTROYING, DESTTROYED, DESTROY_FAILED}
-
-    public static State mClientState = State.NONE;
-
-    public interface OnOperationResultListener {
-        void onStartOperate();
-
-        void onOperateReject(String rejectReason);
-
-        void onOperateResult(int resultCode, String msg);
-    }
+    /**
+     * 高德定位工具类实例
+     */
+    public GaodeLBSUtils mGaodeLbsUtils;
+    /**
+     * 要求获取定位信息的ExtendBaseInstanceEnabler实例。可能有多个ExtendBaseInstanceEnabler的实例请求定位信息，所以使用List
+     */
+    public Map<Integer, ExtendBaseInstanceEnabler> mRequestLocationEablers;
 
     private OnOperationResultListener mOnOperationResultListener;
-
-    @Override
     public void setOnOperationResultListener(OnOperationResultListener listener) {
         this.mOnOperationResultListener = listener;
     }
 
-    private static final int MSG_WHAT_START_OPTERATE = 100;
+    private static final int MSG_WHAT_START_OPTERATE = 1000;
+    private static final int MSG_WHAT_REQUEST_LOCATION = 1001;
+
     private Handler mHandler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(Message msg) {
@@ -124,6 +129,9 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
             String resultMsg = "";
             DebugLog.d("handler message what:" + what);
             switch (what) {
+                case MSG_WHAT_REQUEST_LOCATION:
+                    mGaodeLbsUtils.startLoc();
+                    return false;
                 case MSG_WHAT_START_OPTERATE:
                     mOnOperationResultListener.onStartOperate();
                     return false;
@@ -141,7 +149,6 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
                  * 注册
                  */
                 case ServerConfig.REQUEST_RESULT_REGISTRATION_SUCCESS:
-                    mClientState = State.REGISTERED;
                     mRegistrationId = data.getString("registrationId");
                     resultMsg = mRegistrationId;
                     break;
@@ -225,6 +232,9 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
 
     @Override
     public void register() {
+        if (mGaodeLbsUtils == null) {
+            mGaodeLbsUtils = new GaodeLBSUtils(this, this);
+        }
         if (!TextUtils.isEmpty(mRegistrationId)) {
             mOnOperationResultListener.onOperateReject("Client has already registed!");
             return;
@@ -241,6 +251,10 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
 
     @Override
     public void destroy() {
+        if (mGaodeLbsUtils != null) {
+            mGaodeLbsUtils.stopLoc();
+            mGaodeLbsUtils = null;
+        }
         if (TextUtils.isEmpty(mRegistrationId)) {
             mOnOperationResultListener.onOperateReject("Client has already been destoryed");
             return;
@@ -251,7 +265,6 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
 
     public void checkParams() {
         /**---------------------本地服务器设置----------------*/
-//        if (serverId == SERVER_ID_LOCAL) {
         String endpoint = "Phone-Blue-Client";
 
         // Get server URI
@@ -272,10 +285,8 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         Float latitude = null;
         Float longitude = null;
         Float scaleFactor = 1.0f;
-//
-//            createAndStartClient(endpoint, localAddress, localPort, secureLocalAddress, secureLocalPort, false,
-//                    serverURI, pskIdentity, pskKey, latitude, longitude, scaleFactor);
-//        } else if (serverId == SERVER_ID_REMOTE) {
+
+
 
         /**--------------爱立信服务器设置-------------*/
 //            String endpoint = ServerConfig.END_POINT;
@@ -298,6 +309,8 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
 //            Float latitude = null;
 //            Float longitude = null;
 //            Float scaleFactor = 1.0f;
+
+
         createAndStartClient(endpoint, localAddress, localPort, secureLocalAddress, secureLocalPort, false,
                 serverURI, pskIdentity, pskKey, latitude, longitude, scaleFactor);
 //        }
@@ -310,6 +323,10 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         // Initialize model
         List<ObjectModel> models = ObjectLoader.loadDefault();
         models.addAll(ObjectLoader.loadDdfResources("/assets", modelPaths));
+
+        mLocation = new MyLocation();
+        mLocation.setOnWriteNotifyPeriodListener(this);
+        mLocation.onCreate(mContext.getApplicationContext());
 
         // Initialize object list
         initializer = new ExtendObjectsInitializer(new LwM2mModel(models));
@@ -328,7 +345,8 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
             }
         }
         initializer.setClassForObject(DEVICE, MyDevice.class);
-        List<LwM2mObjectEnabler> enablers = initializer.create(SECURITY, SERVER, DEVICE);
+        initializer.setInstancesForObject(LOCATION, mLocation);
+        List<LwM2mObjectEnabler> enablers = initializer.create(SECURITY, SERVER, DEVICE, LOCATION);
         //设置其他的Object
         List<LwM2mObjectEnabler> enablersMore = setInstancesForObject();
         enablers.addAll(enablersMore);
@@ -378,7 +396,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         for (int objectId : objectClasses.keySet()) {
             try {
                 ExtendBaseInstanceEnabler baseInstance = (ExtendBaseInstanceEnabler) objectClasses.get(objectId).newInstance();
-                baseInstance.setContext(mContext);
+                baseInstance.onCreate(mContext.getApplicationContext());
                 baseInstance.setObjectId(objectId);
                 baseInstance.setOnWriteNotifyPeriodListener(this);
                 baseInstances.put(objectId, baseInstance);
@@ -439,6 +457,36 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
     }
 
     @Override
+    public void requestLocate(int objectId, ExtendBaseInstanceEnabler requestLocationEnabler) {
+        if (mRequestLocationEablers == null) {
+            mRequestLocationEablers = new HashMap<Integer, ExtendBaseInstanceEnabler>();
+        }
+        if (!mRequestLocationEablers.containsKey(objectId)) {
+            mRequestLocationEablers.put(objectId, requestLocationEnabler);
+        }
+        mHandler.sendEmptyMessage(MSG_WHAT_REQUEST_LOCATION);
+    }
+
+    /**
+     * 定位结果
+     * @param isSuccessful 定位是否成功
+     * @param lat 经度
+     * @param lon 维度
+     * @param accuracy 精度。可查看GaodeLBSUtils.java中的方法调用
+     */
+    @Override
+    public void onLocateResult(boolean isSuccessful, double lat, double lon, String accuracy) {
+        if (isSuccessful) {
+            for (Integer objectId:mRequestLocationEablers.keySet()) {
+                mRequestLocationEablers.get(objectId).setLocateResult(lat, lon, accuracy);
+            }
+            mRequestLocationEablers.clear();
+        } else {
+            //showToast("定位失败！");
+        }
+    }
+
+    @Override
     public void setStringToPreference(String key, String value) {
         mPreferences.edit().putString(key, value).commit();
     }
@@ -457,7 +505,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
     }
 
     /**
-     * 停止Object的Instance的周期上报线程
+     * 停止Object的Instance的周期上报线程.并且调用onDestroy()方法，用于销毁一些不需要的资源
      */
     private void stopInstanceNotifyThread() {
         Map<Integer, LwM2mInstanceEnabler[]> instances = initializer.getInstances();
@@ -468,6 +516,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
                 if (enabler instanceof ExtendBaseInstanceEnabler) {
                     ExtendBaseInstanceEnabler e = (ExtendBaseInstanceEnabler) enabler;
                     e.setStartedObseve(false);
+                    e.onDestory();
                 }
             }
         }
@@ -580,5 +629,9 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void showToast(String msg) {
+        Toast.makeText(mContext, msg, Toast.LENGTH_SHORT).show();
     }
 }

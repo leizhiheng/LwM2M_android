@@ -3,6 +3,7 @@ package com.cwtcn.leshanandroidlib.resources;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
@@ -21,6 +22,16 @@ import java.util.ArrayList;
 public class ContactList extends ExtendBaseInstanceEnabler {
     public static final int EVENT_IDENTIFIER = 5823;
     public static final int TEXT = 5527;
+
+    @Override
+    public void onCreate(Context context) {
+
+    }
+
+    @Override
+    public void onDestory() {
+
+    }
 
     @Override
     public synchronized ReadResponse read(int resourceId) {

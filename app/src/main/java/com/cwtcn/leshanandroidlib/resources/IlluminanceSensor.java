@@ -1,5 +1,7 @@
 package com.cwtcn.leshanandroidlib.resources;
 
+import android.content.Context;
+
 import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
 import org.eclipse.leshan.core.response.ReadResponse;
 
@@ -9,6 +11,16 @@ import org.eclipse.leshan.core.response.ReadResponse;
 
 public class IlluminanceSensor extends ExtendBaseInstanceEnabler {
     public static int OBJECT_ID_ILLUMINANCE = 3301;
+
+    @Override
+    public void onCreate(Context context) {
+
+    }
+
+    @Override
+    public void onDestory() {
+
+    }
 
     @Override
     public ReadResponse read(int resourceid) {

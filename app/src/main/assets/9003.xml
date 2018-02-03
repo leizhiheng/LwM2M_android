@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LWM2M  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://openmobilealliance.org/tech/profiles/LWM2M.xsd">
+	<Object ObjectType="MODefinition">
+		<Name>SOS Alert</Name>
+		<Description1>Description: This IPSO object should be used as battery status monitor.</Description1>
+		<ObjectID>9003</ObjectID>
+		<ObjectURN>urn:oma:lwm2m:ext:9003</ObjectURN>
+		<MultipleInstances>Multiple</MultipleInstances>
+		<Mandatory>Optional</Mandatory>
+		<Resources>
+			<Item ID="5527">
+				<Name>Text</Name>
+				<Operations>R</Operations>
+				<MultipleInstances>Single</MultipleInstances>
+				<Mandatory>Optional</Mandatory>
+				<Type>String</Type>
+				<RangeEnumeration></RangeEnumeration>
+				<Units></Units>
+				<Description>for client to report SOS alert</Description>
+			</Item>						
+		</Resources>
+		<Description2></Description2>
+	</Object>
+</LWM2M>

@@ -1,6 +1,7 @@
 package com.cwtcn.leshanandroidlib.resources;
 
 import android.app.NotificationManager;
+import android.content.Context;
 //import android.content.ComponentName;
 //import android.net.Uri;
 //import android.provider.Settings;
@@ -39,6 +40,16 @@ public class NoDisturbMode_sys extends ExtendBaseInstanceEnabler {
     public static final int EVENT_IDENTIFIER = 5823;
     public static final int TEXT = 5527;
 //    public static final String ACTION = Settings.ACTION_ZEN_MODE_SCHEDULE_RULE_SETTINGS;
+
+    @Override
+    public void onCreate(Context context) {
+
+    }
+
+    @Override
+    public void onDestory() {
+
+    }
 
     @Override
     public synchronized ReadResponse read(int resourceId) {

@@ -1,5 +1,7 @@
 package com.cwtcn.leshanandroidlib.resources;
 
+import android.content.Context;
+
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
 
 import org.eclipse.leshan.core.node.LwM2mResource;
@@ -17,6 +19,16 @@ public class SetPoint extends ExtendBaseInstanceEnabler {
 
     private String mText;
 
+
+    @Override
+    public void onCreate(Context context) {
+
+    }
+
+    @Override
+    public void onDestory() {
+
+    }
 
     @Override
     public synchronized ReadResponse read(int resourceId) {
