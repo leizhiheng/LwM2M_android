@@ -11,6 +11,7 @@ import android.content.Context;
 //import android.service.notification.ZenModeConfig.ZenRule;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.leshan.core.node.LwM2mResource;
 import org.eclipse.leshan.core.response.ReadResponse;
@@ -42,8 +43,8 @@ public class NoDisturbMode_sys extends ExtendBaseInstanceEnabler {
 //    public static final String ACTION = Settings.ACTION_ZEN_MODE_SCHEDULE_RULE_SETTINGS;
 
     @Override
-    public void onCreate(Context context) {
-
+    public void onCreate(Context context, int objectId, OnWriteReadListener onWriteReadListener) {
+        super.onCreate(context, objectId, onWriteReadListener);
     }
 
     @Override
@@ -85,7 +86,7 @@ public class NoDisturbMode_sys extends ExtendBaseInstanceEnabler {
      * @return
      */
     private String getNoDisturbModeMsg() {
-        return mOnWriteReadListener.getStringFromPreferemce(KEY_NO_DISTURB_MODE_MSG);
+        return mOnWriteReadListener.getStringFromPreferemce(KEY_NO_DISTURB_MODE_MSG, null);
     }
 
     /**

@@ -26,11 +26,6 @@ public class AddressableTextDisplay extends ExtendBaseInstanceEnabler {
     }
 
     @Override
-    public void onCreate(Context context) {
-
-    }
-
-    @Override
     public void onDestory() {
 
     }

@@ -159,6 +159,9 @@ public class MainPresenter implements IMainPresenter, OnOperationResultListener 
     public void onOperateResult(int resultCode, String msg) {
         mView.hideProgress();
         switch (resultCode) {
+            case ClientService.MSG_WHAT_NETWORK_IS_NOT_AVAILABLE:
+                mView.updateClientStatus(false, null);
+                break;
                 /*
                  * 引导服务器
                  */

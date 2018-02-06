@@ -7,8 +7,10 @@ import android.content.IntentFilter;
 import android.widget.Toast;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.leshan.core.node.LwM2mResource;
+import org.eclipse.leshan.core.response.ObserveResponse;
 import org.eclipse.leshan.core.response.ReadResponse;
 import org.eclipse.leshan.core.response.WriteResponse;
 import org.json.JSONException;
@@ -16,89 +18,92 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 /**
 
  */
 public class SosAlert extends ExtendBaseInstanceEnabler {
-    public static final int TEXT = 5527;
-    private String mSosAlertMsg;
+    /**
+     * 经度
+     */
+    private float latitude;
+    /**
+     * 纬度
+     */
+    private float longitude;
+    /**
+     * 精度：定位的误差范围，单位为米
+     */
+    private float accuracy;
 
     @Override
-    public void onCreate(Context context) {
-        mContext = context;
+    public void onCreate(Context context, int objectId, OnWriteReadListener onWriteReadListener) {
+        super.onCreate(context, objectId, onWriteReadListener);
         registerSosReceiver();
+        //先获取一次位置信息。
+        mOnWriteReadListener.requestLocate(objectId, this);
+    }
+
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            mOnWriteReadListener.requestLocate(objectId, SosAlert.this);
+        }
+    };
+    private void registerSosReceiver() {
+        IntentFilter filter = new IntentFilter("com.abardeen.action.VolDownLongPress");
+        mContext.registerReceiver(mReceiver, filter);
     }
 
     @Override
     public void onDestory() {
-        mContext.unregisterReceiver(mSosReceiver);
-    }
-
-    private BroadcastReceiver mSosReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if ("com.abardeen.action.VolDownLongPress".equals(intent.getAction())) {
-                //收到Sos广播后先获取地理位置
-                mOnWriteReadListener.requestLocate(objectId, SosAlert.this);
-            }
-        }
-    };
-
-    private void registerSosReceiver() {
-        //如果长按音量键5秒，PhoneWindowManager.java会发送一个广播，Action:com.abardeen.action.VolDownLongPress,用于触发SOS报警。
-        //这里监听这个广播
-        IntentFilter filter = new IntentFilter("com.abardeen.action.VolDownLongPress");
-        mContext.registerReceiver(mSosReceiver, filter);
-
+        mContext.unregisterReceiver(mReceiver);
     }
 
     @Override
-    public synchronized ReadResponse read(int resourceId) {
-        switch (resourceId) {
-            case TEXT:
-                //提交紧急求救信息
-                return ReadResponse.success(resourceId, getSosAlertMsg());
+    public ReadResponse read(int resourceid) {
+        DebugLog.d("leshan.MyLocation.read() resourceId = " + resourceid);
+        switch (resourceid) {
+            case 0://读取经度
+                return ReadResponse.success(resourceid, getLatitude());
+            case 1://读取纬度
+                return ReadResponse.success(resourceid, getLongitude());
+            case 3://读取精度
+                return ReadResponse.success(resourceid, getAccuracy());
+            case 5://读取时间戳
+                return ReadResponse.success(resourceid, getTimestamp());
             default:
-                return super.read(resourceId);
+                return super.read(resourceid);
         }
     }
 
     @Override
-    public void setLocateResult(double lat, double lon, String accuracy) {
-        super.setLocateResult(lat, lon, accuracy);
-        //定位成功后提交Sos信息到服务器
-        produceSosAlertMsg(lat, lon, accuracy);
+    public void setLocateResult(double lat, double lon, float accuracy) {
+        this.latitude = (float) lat;
+        this.longitude = (float) lon;
+        this.accuracy = accuracy;
+        fireResourcesChange(0, 1, 3, 5);
     }
 
-    private void produceSosAlertMsg(double lat, double lon, String accuracy) {
-        JSONObject object = new JSONObject();
-        try {
-            object.put("latitude", String.valueOf(lat));
-            object.put("longitude", String.valueOf(lon));
-            object.put("accuracy", accuracy);
-            object.put("timestamp", String.valueOf(new Date().getTime()));
-            mSosAlertMsg = object.toString();
-            DebugLog.d("sos alert msg:" + mSosAlertMsg);
-            fireResourcesChange(TEXT);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+    public float getLatitude() {
+        DebugLog.d("MyLocation.getLatitude==> latitude:" + latitude);
+        return latitude;
     }
 
+    public float getLongitude() {
+        DebugLog.d("MyLocation.getLongitude==> longitude:" + longitude);
+        return longitude;
+    }
 
-    /**
-     * SOS信息应该包含两部分：位置信息和当前时间，格式如下：
-     *
-     {
-        "latitude": "23.82893",
-        "longitude": "-178.34348"
-        "timestap": "2018-1-31 13:10:10"
-     }
-     * @return
-     */
-    private String getSosAlertMsg() {
+    public float getAccuracy() {
+        return accuracy;
+    }
 
-        return mSosAlertMsg == null ? "Waiting to get sos alert!" : mSosAlertMsg;
+    public Date getTimestamp() {
+        //return timestamp;
+        return new Date();
     }
 }

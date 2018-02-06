@@ -38,6 +38,18 @@
 				<Units></Units>
 				<Description>for client to report battery level</Description>
 			</Item>
+			<Item ID="5">
+				<Name>Timestamp</Name>
+				<Operations>R</Operations>
+				<MultipleInstances>Single</MultipleInstances>
+				<Mandatory>Mandatory</Mandatory>
+				<Type>Time</Type>
+				<RangeEnumeration/>
+				<Units/>
+				<Description>
+					The timestamp of when the location measurement was performed.
+				</Description>
+			</Item>
 		</Resources>
 		<Description2></Description2>
 	</Object>

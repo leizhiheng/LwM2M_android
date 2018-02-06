@@ -62,7 +62,7 @@ public class GaodeLBSUtils {
                     Date date = new Date(amapLocation.getTime());
                     df.format(date);
 
-                    mListener.onLocateResult(true, latitude, longitude, String.valueOf(accuracy));
+                    mListener.onLocateResult(true, latitude, longitude, accuracy);
 
 
                     StringBuffer buffer = new StringBuffer();
@@ -81,7 +81,7 @@ public class GaodeLBSUtils {
                     DebugLog.d("Location result " + buffer.toString());
                     Toast.makeText(mContext, buffer.toString(), Toast.LENGTH_LONG).show();
                 } else {
-                    mListener.onLocateResult(false, -1, -1, null);
+                    mListener.onLocateResult(false, -1, -1, -1);
 
                     //定位失败时，可通过ErrCode（错误码）信息来确定失败的原因，errInfo是错误信息，详见错误码表。
                     DebugLog.e("AmapError: location Error, ErrCode:"
@@ -92,7 +92,7 @@ public class GaodeLBSUtils {
                             + amapLocation.getErrorInfo(), Toast.LENGTH_LONG).show();
                 }
             } else {
-                mListener.onLocateResult(false, -1, -1, null);
+                mListener.onLocateResult(false, -1, -1, -1);
             }
 
             mLocationClient.stopLocation();//停止定位后，本地定位服务并不会被销毁

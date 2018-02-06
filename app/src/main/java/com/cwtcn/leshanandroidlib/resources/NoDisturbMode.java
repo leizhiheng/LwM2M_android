@@ -4,6 +4,7 @@ import android.content.Context;
 import android.widget.Toast;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.leshan.core.node.LwM2mResource;
 import org.eclipse.leshan.core.response.ReadResponse;
@@ -39,8 +40,8 @@ public class NoDisturbMode extends ExtendBaseInstanceEnabler {
     public static final int TEXT = 5527;
 
     @Override
-    public void onCreate(Context context) {
-
+    public void onCreate(Context context, int objectId, OnWriteReadListener onWriteReadListener) {
+        super.onCreate(context, objectId, onWriteReadListener);
     }
 
     @Override
@@ -83,7 +84,7 @@ public class NoDisturbMode extends ExtendBaseInstanceEnabler {
      * @return
      */
     private String getNoDisturbModeMsg() {
-        return mOnWriteReadListener.getStringFromPreferemce(KEY_NO_DISTURB_MODE_MSG);
+        return mOnWriteReadListener.getStringFromPreferemce(KEY_NO_DISTURB_MODE_MSG, null);
     }
 
     /**

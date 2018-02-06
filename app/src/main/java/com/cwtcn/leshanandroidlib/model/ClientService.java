@@ -6,28 +6,34 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.provider.ContactsContract;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.widget.Toast;
 
+import com.android.internal.telephony.ITelephony;
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
-import com.cwtcn.leshanandroidlib.resources.AddressableTextDisplay;
 import com.cwtcn.leshanandroidlib.resources.BatteryStatus;
 import com.cwtcn.leshanandroidlib.resources.ContactList;
 import com.cwtcn.leshanandroidlib.resources.ExtendBaseInstanceEnabler;
 import com.cwtcn.leshanandroidlib.resources.ExtendObjectsInitializer;
-import com.cwtcn.leshanandroidlib.resources.IlluminanceSensor;
 import com.cwtcn.leshanandroidlib.resources.MyDevice;
 import com.cwtcn.leshanandroidlib.resources.MyLocation;
 import com.cwtcn.leshanandroidlib.resources.NoDisturbMode;
 import com.cwtcn.leshanandroidlib.resources.RandomTemperatureSensor;
 import com.cwtcn.leshanandroidlib.resources.SetPoint;
 import com.cwtcn.leshanandroidlib.resources.SosAlert;
+import com.cwtcn.leshanandroidlib.resources.WhiteList;
+import com.cwtcn.leshanandroidlib.utils.ContactListUtils;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
 import com.cwtcn.leshanandroidlib.utils.interfaces.OnLocateResultListener;
 import com.cwtcn.leshanandroidlib.utils.interfaces.OnOperationResultListener;
@@ -54,6 +60,7 @@ import org.eclipse.leshan.util.Hex;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,7 +82,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
     private final static String[] modelPaths = new String[]{
             "3301.xml", "3303.xml", "3308.xml",
             "3341.xml", "9000.xml", "9001.xml",
-            "9002.xml", "9003.xml"};
+            "9002.xml", "9003.xml", "9004.xml"};
     /*添加一个Object第2步：添加Object对应的类*/
     private final static Map<Integer, Class> objectClasses;
 
@@ -90,6 +97,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         objectClasses.put(9001, NoDisturbMode.class);//NoDisturbMode-cus
         objectClasses.put(9002, BatteryStatus.class);//BatteryStatus-cus
         objectClasses.put(9003, SosAlert.class);//SosAlert-cus
+        objectClasses.put(9004, WhiteList.class);//WhiteList-cus
     }
 
     private final static Map<Integer, ExtendBaseInstanceEnabler> baseInstances = new HashMap<Integer, ExtendBaseInstanceEnabler>();
@@ -101,6 +109,10 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
     private MyDevice mDevice;
 
     private String mRegistrationId;
+    /**
+     * 客户端与服务器是否是异常断开连接，比如断网后导致连接断开。
+     */
+    private boolean mIsDisconnectedAbnormal = false;
 
     public static SharedPreferences mPreferences;
     /**
@@ -113,12 +125,15 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
     public Map<Integer, ExtendBaseInstanceEnabler> mRequestLocationEablers;
 
     private OnOperationResultListener mOnOperationResultListener;
+
     public void setOnOperationResultListener(OnOperationResultListener listener) {
         this.mOnOperationResultListener = listener;
     }
 
-    private static final int MSG_WHAT_START_OPTERATE = 1000;
-    private static final int MSG_WHAT_REQUEST_LOCATION = 1001;
+    public static final int MSG_WHAT_START_OPTERATE = 1000;
+    public static final int MSG_WHAT_REQUEST_LOCATION = 1001;
+    public static final int MSG_WHAT_NETWORK_IS_AVAILABLE = 1002;
+    public static final int MSG_WHAT_NETWORK_IS_NOT_AVAILABLE = 1003;
 
     private Handler mHandler = new Handler(new Handler.Callback() {
         @Override
@@ -130,11 +145,34 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
             DebugLog.d("handler message what:" + what);
             switch (what) {
                 case MSG_WHAT_REQUEST_LOCATION:
+                    //收到消息开始定位
                     mGaodeLbsUtils.startLoc();
-                    return false;
+                    return true;
                 case MSG_WHAT_START_OPTERATE:
+                    //Client向Server提交了一次请求
                     mOnOperationResultListener.onStartOperate();
-                    return false;
+                    return true;
+                case MSG_WHAT_NETWORK_IS_AVAILABLE:
+                    //网络改变：网络可用
+                    //如果之前是非正常断开连接，则尝试重新连接
+                    //showToast("Network status changed, isAvailable:" + true + ", mRegistrationId = " + mRegistrationId);
+                    DebugLog.d("Network status changed, isAvailable:" + true + ", mRegistrationId = " + mRegistrationId);
+                    if (mIsDisconnectedAbnormal) {
+                        register();
+                    }
+                    return true;
+                case MSG_WHAT_NETWORK_IS_NOT_AVAILABLE:
+                    //网络改变：网络不可用
+                    //如果之前已经注册，则直接将mRegistrationId设置为null,表示连接已断开
+                    //showToast("Network status changed, isAvailable:" + false + ", mRegistrationId = " + mRegistrationId);
+                    DebugLog.d("Network status changed, isAvailable:" + false + ", mRegistrationId = " + mRegistrationId);
+                    if (!TextUtils.isEmpty(mRegistrationId)) {
+                        mIsDisconnectedAbnormal = true;
+                        mRegistrationId = null;
+                        resultMsg = "Disconnected from server abnormally!";
+                    }
+                    break;
+
                 /*
                  * 引导服务器
                  */
@@ -144,28 +182,28 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
                     break;
                 case ServerConfig.REQUEST_RESULT_BOOTSTRAP_TIMEOUT:
                     break;
-
                 /*
                  * 注册
                  */
                 case ServerConfig.REQUEST_RESULT_REGISTRATION_SUCCESS:
                     mRegistrationId = data.getString("registrationId");
                     resultMsg = mRegistrationId;
+                    mIsDisconnectedAbnormal = false;
                     break;
                 case ServerConfig.REQUEST_RESULT_REGISTRATION_FAILURE:
                 case ServerConfig.REQUEST_RESULT_REGISTRATION_TIMEOUT:
                     break;
-
                 /*
                  * 更新
                  */
                 case ServerConfig.REQUEST_RESULT_UPDATE_SUCCESS:
+                    mIsDisconnectedAbnormal = false;
                     break;
                 case ServerConfig.REQUEST_RESULT_UPDATE_FAILURE:
-                    break;
                 case ServerConfig.REQUEST_RESULT_UPDATE_TIMEOUT:
+                    resultMsg = "Disconnected from server abnormally!";
+                    mRegistrationId = null;
                     break;
-
                 /*
                  * 注销
                  */
@@ -199,15 +237,81 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action.equals("android.net.conn.CONNECTIVITY_CHANGE") || action.equals("android.net.wifi.WIFI_STATE_CHANGED") || action.equals("android.net.wifi.STATE_CHANGE")) {
+                ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+                NetworkInfo networkinfo = connMgr.getActiveNetworkInfo();
 
+                if (networkinfo == null || !networkinfo.isAvailable()) {
+                    //如果是短暂地断开网络，则不处理这个消息，所以延迟5秒发送
+                    mHandler.removeMessages(MSG_WHAT_NETWORK_IS_AVAILABLE);
+                    mHandler.sendEmptyMessageDelayed(MSG_WHAT_NETWORK_IS_NOT_AVAILABLE, 2000);
+                } else {
+                    mHandler.removeMessages(MSG_WHAT_NETWORK_IS_NOT_AVAILABLE);
+                    mHandler.sendEmptyMessageDelayed(MSG_WHAT_NETWORK_IS_AVAILABLE, 2000);
+                }
+            } else if (action.equals("android.intent.action.PHONE_STATE")) {
+                //获取白名单列表
+                ContactListUtils utils = new ContactListUtils(mContext);
+                List<ContactListUtils.ContactBean> whiteLists = utils.getContacts(ContactsContract.Data.CONTENT_URI,
+                        ContactsContract.CommonDataKinds.Phone.DATA4 + "=? and " + ContactsContract.CommonDataKinds.Phone.DATA2 + "=?", new String[] {"1", "2"});
+                DebugLog.d("whitelist：" + utils.contacts2array(whiteLists).toString());
+                //判断来电号码是否属于白名单
+                String phone = intent.getStringExtra("incoming_number");
+                boolean isContain = false;
+                for (ContactListUtils.ContactBean bean: whiteLists) {
+                    if (phone.equals(bean.mobile)) {
+                        isContain = true;
+                        break;
+                    }
+                }
+                DebugLog.d("incall phone number:" + phone + ", is white list:" + isContain);
+                //Toast.makeText(mContext, "Call state ringing, number:" + phone, Toast.LENGTH_LONG).show();
+                //如果来电号码不属于白名单，则拦截来电
+                if (!isContain) {
+                    TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(context.TELEPHONY_SERVICE);
+                    int state = telephonyManager.getCallState();
+                    switch (state) {
+                        //来电状态
+                        case TelephonyManager.CALL_STATE_IDLE:
+                        case TelephonyManager.CALL_STATE_RINGING:
+                            //得到TelephonyManager的Class对象
+                            Class<TelephonyManager> telephonyManagerClass = TelephonyManager.class;
+                            try {
+                                //得到TelephonyManager.getITelephony方法的Method对象
+                                Method method = telephonyManagerClass.getDeclaredMethod("getITelephony", new Class[0]);
+                                //允许访问私有方法
+                                method.setAccessible(true);
+                                //调用getITelephony方法发挥ITelephony对象
+                                ITelephony telephony = (ITelephony) method.invoke(telephonyManager, new Object[0]);
+                                //挂断电话
+                                telephony.endCall();
+                            } catch (Exception e) {
+                                //Toast.makeText(mContext, "end call failed, e:" + e.getMessage(), Toast.LENGTH_LONG).show();
+                                DebugLog.d("end call failed, error message:" + e.getMessage());
+                                e.printStackTrace();
+                            }
+                            break;
+                        //通话状态
+                        case TelephonyManager.CALL_STATE_OFFHOOK:
+                            break;
+                        //挂断状态
+//                        case TelephonyManager.CALL_STATE_IDLE:
+//                            break;
+                    }
+                }
+            }
         }
     };
+
     private IntentFilter mFilter;
     private void registerReceiver() {
         mFilter = new IntentFilter();
         mFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
         mFilter.addAction("android.net.wifi.WIFI_STATE_CHANGED");
         mFilter.addAction("android.net.wifi.STATE_CHANGE");
+        //监听电话状态
+        mFilter.addAction("android.intent.action.PHONE_STATE");
         mContext.registerReceiver(mReceiver, mFilter);
     }
 
@@ -287,7 +391,6 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         Float scaleFactor = 1.0f;
 
 
-
         /**--------------爱立信服务器设置-------------*/
 //            String endpoint = ServerConfig.END_POINT;
 //
@@ -325,8 +428,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         models.addAll(ObjectLoader.loadDdfResources("/assets", modelPaths));
 
         mLocation = new MyLocation();
-        mLocation.setOnWriteNotifyPeriodListener(this);
-        mLocation.onCreate(mContext.getApplicationContext());
+        mLocation.onCreate(mContext.getApplicationContext(), LOCATION, this);
 
         // Initialize object list
         initializer = new ExtendObjectsInitializer(new LwM2mModel(models));
@@ -396,9 +498,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         for (int objectId : objectClasses.keySet()) {
             try {
                 ExtendBaseInstanceEnabler baseInstance = (ExtendBaseInstanceEnabler) objectClasses.get(objectId).newInstance();
-                baseInstance.onCreate(mContext.getApplicationContext());
-                baseInstance.setObjectId(objectId);
-                baseInstance.setOnWriteNotifyPeriodListener(this);
+                baseInstance.onCreate(mContext.getApplicationContext(), objectId, this);
                 baseInstances.put(objectId, baseInstance);
                 /*添加一个Object第3步：创建实例，并添加到initializer中*/
                 initializer.setInstancesForObject(objectId, baseInstance);
@@ -469,15 +569,16 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
 
     /**
      * 定位结果
+     *
      * @param isSuccessful 定位是否成功
-     * @param lat 经度
-     * @param lon 维度
-     * @param accuracy 精度。可查看GaodeLBSUtils.java中的方法调用
+     * @param lat          经度
+     * @param lon          维度
+     * @param accuracy     精度。可查看GaodeLBSUtils.java中的方法调用
      */
     @Override
-    public void onLocateResult(boolean isSuccessful, double lat, double lon, String accuracy) {
+    public void onLocateResult(boolean isSuccessful, double lat, double lon, float accuracy) {
         if (isSuccessful) {
-            for (Integer objectId:mRequestLocationEablers.keySet()) {
+            for (Integer objectId : mRequestLocationEablers.keySet()) {
                 mRequestLocationEablers.get(objectId).setLocateResult(lat, lon, accuracy);
             }
             mRequestLocationEablers.clear();
@@ -492,8 +593,8 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
     }
 
     @Override
-    public String getStringFromPreferemce(String key) {
-        return mPreferences.getString(NoDisturbMode.KEY_NO_DISTURB_MODE_MSG, null);
+    public String getStringFromPreferemce(String key, String defaultValue) {
+        return mPreferences.getString(NoDisturbMode.KEY_NO_DISTURB_MODE_MSG, defaultValue);
     }
 
     public void setIntervalInSec(int objectId, int period) {

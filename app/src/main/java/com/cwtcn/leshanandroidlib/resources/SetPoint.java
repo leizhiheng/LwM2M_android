@@ -3,6 +3,7 @@ package com.cwtcn.leshanandroidlib.resources;
 import android.content.Context;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.leshan.core.node.LwM2mResource;
 import org.eclipse.leshan.core.response.ExecuteResponse;
@@ -12,8 +13,6 @@ import org.eclipse.leshan.core.response.WriteResponse;
 import static org.eclipse.leshan.LwM2mId.LOCATION;
 
 public class SetPoint extends ExtendBaseInstanceEnabler {
-
-
     public static final int OBJECT_ID_SET_POINT = 3308;
     public static final int SET_POINT_VALUE = 5900;
 
@@ -21,8 +20,8 @@ public class SetPoint extends ExtendBaseInstanceEnabler {
 
 
     @Override
-    public void onCreate(Context context) {
-
+    public void onCreate(Context context, int objectId, OnWriteReadListener onWriteReadListener) {
+        super.onCreate(context, objectId, onWriteReadListener);
     }
 
     @Override

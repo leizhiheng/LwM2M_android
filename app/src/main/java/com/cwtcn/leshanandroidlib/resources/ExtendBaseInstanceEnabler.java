@@ -27,19 +27,23 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
     protected HashMap<Integer, Long> observedResource;
 
     protected OnWriteReadListener mOnWriteReadListener;
-    public void setOnWriteNotifyPeriodListener(OnWriteReadListener listener) {
-        this.mOnWriteReadListener = listener;
-    }
 
     /**
      * 当InstanceEnabler被创建时，ClientService会调用这个方法
      */
-    public abstract void onCreate(Context context);
+    public void onCreate(Context context, int objectId, OnWriteReadListener onWriteReadListener) {
+        this.mContext = context;
+        this.objectId = objectId;
+        this.mOnWriteReadListener = onWriteReadListener;
+    }
+
 
     /**
      * 当InstanceEnabler被之前，ClientService会调用这个方法
      */
-    public abstract void onDestory();
+    public void onDestory() {
+
+    }
 
     /**
      * 当ClientService定位成功后，调用该方法，定位结果发送给InstanceEnabler。
@@ -48,7 +52,7 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
      * @param lon 维度
      * @param accuracy 精度
      */
-    public void setLocateResult(double lat, double lon, String accuracy) {
+    public void setLocateResult(double lat, double lon, float accuracy) {
     }
 
     @Override
@@ -74,7 +78,6 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
         }
         observedResource.put(resourceId, getNowMilliSecs());
     }
-
 
     public void setObjectId(int objectId) {
         this.objectId = objectId;
@@ -117,6 +120,9 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
                     for (int resourceid : observedResource.keySet()) {
 //                        DebugLog.d("startPeriodicNotify resourceid = " + resourceid);
                         if (intervalInSec * 1000 < milliSecs - observedResource.get(resourceid)) {
+                            //在通知服务器更新Resource的值之前，如果需要做一些其他的工作，就执行beforeFireResourceChange(resourceId)方法。
+                            //这个方法在不同的子类中有不同的具体实现
+                            beforeFireResourceChange(resourceid);
                             //如果时间间隔大于minPeriod，则上报数据
                             fireResourcesChange(resourceid);
                             //记录本次上报时间
@@ -126,6 +132,13 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
                 }
             }
         }).start();
+    }
+
+    /**
+     * 如果子类在周期提交资源值之前需要做一些其他的工作，则复写这个方法。
+     * @param resourceId
+     */
+    protected void beforeFireResourceChange(int resourceId) {
     }
 
     private long getNowMilliSecs() {

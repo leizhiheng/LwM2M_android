@@ -253,7 +253,7 @@ public class LeshanClientDemo {
 //        trap = false, serverURI = coap://localhost:5683
 
         endpoint = "Blue-Phone";
-        locationInstance = new MyLocation(latitude, longitude, scaleFactor);
+        locationInstance = new MyLocation();
 
         // Initialize model
         List<ObjectModel> models = ObjectLoader.loadDefault();

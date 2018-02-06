@@ -8,16 +8,54 @@
 		<MultipleInstances>Multiple</MultipleInstances>
 		<Mandatory>Optional</Mandatory>
 		<Resources>
-			<Item ID="5527">
-				<Name>Text</Name>
+			<Item ID="0">
+				<Name>Latitude</Name>
+				<Operations>R</Operations>
+				<MultipleInstances>Single</MultipleInstances>
+				<Mandatory>Mandatory</Mandatory>
+				<Type>Float</Type>
+				<RangeEnumeration/>
+				<Units>Deg</Units>
+				<Description>
+					The decimal notation of latitude, e.g., -43.5723 [World Geodetic System 1984].
+				</Description>
+			</Item>
+			<Item ID="1">
+				<Name>Longitude</Name>
+				<Operations>R</Operations>
+				<MultipleInstances>Single</MultipleInstances>
+				<Mandatory>Mandatory</Mandatory>
+				<Type>Float</Type>
+				<RangeEnumeration/>
+				<Units>Deg</Units>
+				<Description>
+					The decimal notation of longitude, e.g., 153.21760 [World Geodetic System 1984].
+				</Description>
+			</Item>
+			<Item ID="3">
+				<Name>Radius</Name>
 				<Operations>R</Operations>
 				<MultipleInstances>Single</MultipleInstances>
 				<Mandatory>Optional</Mandatory>
-				<Type>String</Type>
-				<RangeEnumeration></RangeEnumeration>
-				<Units></Units>
-				<Description>for client to report SOS alert</Description>
-			</Item>						
+				<Type>Float</Type>
+				<RangeEnumeration/>
+				<Units>m</Units>
+				<Description>
+					The value in the Radius Resource indicates the size in meters of a circular area around a point of geometry.
+				</Description>
+			</Item>
+			<Item ID="5">
+				<Name>Timestamp</Name>
+				<Operations>R</Operations>
+				<MultipleInstances>Single</MultipleInstances>
+				<Mandatory>Mandatory</Mandatory>
+				<Type>Time</Type>
+				<RangeEnumeration/>
+				<Units/>
+				<Description>
+					The timestamp of when the location measurement was performed.
+				</Description>
+			</Item>
 		</Resources>
 		<Description2></Description2>
 	</Object>

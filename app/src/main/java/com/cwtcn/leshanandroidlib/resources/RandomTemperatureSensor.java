@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Debug;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
 import org.eclipse.leshan.core.node.LwM2mResource;
@@ -46,8 +47,8 @@ public class RandomTemperatureSensor extends ExtendBaseInstanceEnabler {
     }
 
     @Override
-    public void onCreate(Context context) {
-
+    public void onCreate(Context context, int objectId, OnWriteReadListener onWriteReadListener) {
+        super.onCreate(context, objectId, onWriteReadListener);
     }
 
     @Override

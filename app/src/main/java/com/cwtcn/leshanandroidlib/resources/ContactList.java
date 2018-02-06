@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.provider.ContactsContract;
 
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.leshan.core.node.LwM2mResource;
 import org.eclipse.leshan.core.response.ReadResponse;
@@ -24,8 +25,8 @@ public class ContactList extends ExtendBaseInstanceEnabler {
     public static final int TEXT = 5527;
 
     @Override
-    public void onCreate(Context context) {
-
+    public void onCreate(Context context, int objectId, OnWriteReadListener onWriteReadListener) {
+        super.onCreate(context, objectId, onWriteReadListener);
     }
 
     @Override

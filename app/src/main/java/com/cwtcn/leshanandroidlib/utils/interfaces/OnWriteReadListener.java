@@ -34,7 +34,7 @@ public interface OnWriteReadListener {
      * @param key
      * @return
      */
-    String getStringFromPreferemce(String key);
+    String getStringFromPreferemce(String key, String defaultValue);
 
     /**
      * 要求获取定位信息

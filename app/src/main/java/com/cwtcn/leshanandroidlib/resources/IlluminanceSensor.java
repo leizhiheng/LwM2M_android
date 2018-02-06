@@ -12,10 +12,6 @@ import org.eclipse.leshan.core.response.ReadResponse;
 public class IlluminanceSensor extends ExtendBaseInstanceEnabler {
     public static int OBJECT_ID_ILLUMINANCE = 3301;
 
-    @Override
-    public void onCreate(Context context) {
-
-    }
 
     @Override
     public void onDestory() {

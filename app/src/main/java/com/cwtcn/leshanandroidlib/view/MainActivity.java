@@ -30,6 +30,7 @@ import com.cwtcn.leshanandroidlib.model.ResourceBean;
 import com.cwtcn.leshanandroidlib.presenter.IMainPresenter;
 import com.cwtcn.leshanandroidlib.presenter.MainPresenter;
 import com.cwtcn.leshanandroidlib.resources.RandomTemperatureSensor;
+import com.cwtcn.leshanandroidlib.utils.ContactListUtils;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
 import com.cwtcn.leshanandroidlib.utils.locationutils.LocationUtil;
 

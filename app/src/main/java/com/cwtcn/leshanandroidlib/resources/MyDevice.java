@@ -8,6 +8,7 @@ import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.leshan.client.resource.BaseInstanceEnabler;
 import org.eclipse.leshan.core.model.ResourceModel.Type;
@@ -36,18 +37,18 @@ public class MyDevice extends ExtendBaseInstanceEnabler {
 
     public MyDevice() {
         // notify new date each 5 second
-        Timer timer = new Timer("Device-Current Time");
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                fireResourcesChange(13);
-            }
-        }, 5000, 5000);
+//        Timer timer = new Timer("Device-Current Time");
+//        timer.schedule(new TimerTask() {
+//            @Override
+//            public void run() {
+//                fireResourcesChange(13);
+//            }
+//        }, 5000, 5000);
     }
 
     @Override
-    public void onCreate(Context context) {
-        mContext = context;
+    public void onCreate(Context context, int objectId, OnWriteReadListener onWriteReadListener) {
+        super.onCreate(context, objectId, onWriteReadListener);
     }
 
     @Override

@@ -2,41 +2,41 @@ package com.cwtcn.leshanandroidlib.resources;
 
 import android.content.Context;
 
-import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
-import com.cwtcn.leshanandroidlib.utils.locationutils.WifiLocateUtils;
+import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
 import org.eclipse.leshan.core.node.LwM2mResource;
 import org.eclipse.leshan.core.response.ObserveResponse;
 import org.eclipse.leshan.core.response.ReadResponse;
 import org.eclipse.leshan.core.response.WriteResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 public class MyLocation extends ExtendBaseInstanceEnabler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MyLocation.class);
-
-    private static final Random RANDOM = new Random();
-
+    /**
+     * 经度
+     */
     private float latitude;
+    /**
+     * 纬度
+     */
     private float longitude;
-    private float scaleFactor;
-    private WifiLocateUtils mWifiLocUtils;
+    /**
+     * 精度：定位的误差范围，单位为米
+     */
+    private float accuracy;
     private Date timestamp;
     private Map<Integer, Long> observedResource = new HashMap<Integer, Long>();
 
     private CountDownLatch mCountDownLatch;
 
     @Override
-    public void onCreate(Context context) {
-        mContext = context;
+    public void onCreate(Context context, int objectId, OnWriteReadListener onWriteReadListener) {
+        super.onCreate(context, objectId, onWriteReadListener);
     }
 
     @Override
@@ -45,27 +45,6 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
 
     public MyLocation() {}
 
-    public MyLocation(Float latitude, Float longitude, float scaleFactor) {
-        if (latitude != null) {
-            this.latitude = latitude + 90f;
-        } else {
-            this.latitude = RANDOM.nextInt(180);
-        }
-        if (longitude != null) {
-            this.longitude = longitude + 180f;
-        } else {
-            this.longitude = RANDOM.nextInt(360);
-        }
-        this.scaleFactor = scaleFactor;
-        timestamp = new Date();
-    }
-
-    @Override
-    public ObserveResponse observe(int resourceid) {
-        notifyObserve(resourceid);
-        return super.observe(resourceid);
-    }
-
     @Override
     public ReadResponse read(int resourceid) {
         DebugLog.d("leshan.MyLocation.read() resourceId = " + resourceid);
@@ -73,40 +52,26 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
             mCountDownLatch = new CountDownLatch(1);
         }
         switch (resourceid) {
-            case 0:
+            case 0://读取经度
                 mOnWriteReadListener.requestLocate(objectId, this);
                 try {
-                    DebugLog.d("mCountDownLatch.aweit getLatitude begin");
-                    //在主线程中获取定位，所以这里要等主线程定位完成，然后在返回read结果。
-                    mCountDownLatch.await();
-                    DebugLog.d("mCountDownLatch.aweit getLatitude end");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return ReadResponse.success(resourceid, getLatitude());
-            case 1:
-                try {
                     DebugLog.d("mCountDownLatch.aweit getLongitude begin");
-                    //在主线程中获取定位，所以这里要等主线程定位完成，然后在返回read结果。
+                    //在主线程中获取定位，所以这里要等主线程定位完成，然后再返回read结果。
                     mCountDownLatch.await();
                     DebugLog.d("mCountDownLatch.aweit getLongitude end");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                return ReadResponse.success(resourceid, getLatitude());
+            case 1://读取纬度
                 return ReadResponse.success(resourceid, getLongitude());
-            case 5:
+            case 3://读取精度
+                return ReadResponse.success(resourceid, getAccuracy());
+            case 5://读取时间戳
                 return ReadResponse.success(resourceid, getTimestamp());
             default:
                 return super.read(resourceid);
         }
-    }
-
-    @Override
-    public void setLocateResult(double lat, double lon, String msg) {
-        latitude = (float) lat;
-        longitude = (float) lon;
-        DebugLog.d("mCountDownLatch.countDown");
-        mCountDownLatch.countDown();
     }
 
     @Override
@@ -115,25 +80,13 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
         return WriteResponse.success();
     }
 
-    private void notifyResource(long secs) {
-        for (int resourceid : observedResource.keySet()) {
-            if (ServerConfig.MIN_PERIOD < secs - observedResource.get(resourceid)
-                    && secs - observedResource.get(resourceid) < ServerConfig.MAX_PERIOD) {
-                observedResource.put(resourceid, secs);
-                switch (resourceid) {
-                    case 0:
-                        latitude += 1;
-                        break;
-                    case 1:
-                        longitude += 1;
-                        break;
-                    case 5:
-                        timestamp = new Date();
-                        break;
-                }
-                fireResourcesChange(resourceid);
-            }
-        }
+    @Override
+    public void setLocateResult(double lat, double lon, float accuracy) {
+        latitude = (float) lat;
+        longitude = (float) lon;
+        this.accuracy = accuracy;
+        DebugLog.d("mCountDownLatch.countDown");
+        mCountDownLatch.countDown();
     }
 
     public void updateLocation(int resourceId, float newValue) {
@@ -165,6 +118,10 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
     public float getLongitude() {
         DebugLog.d("MyLocation.getLongitude==> longitude:" + longitude);
         return longitude;
+    }
+
+    public float getAccuracy() {
+        return accuracy;
     }
 
     public Date getTimestamp() {

@@ -5,5 +5,5 @@ package com.cwtcn.leshanandroidlib.utils.interfaces;
  */
 
 public interface OnLocateResultListener {
-    void onLocateResult(boolean isSuccessful, double lat, double lon, String msg);
+    void onLocateResult(boolean isSuccessful, double lat, double lon, float accuracy);
 }
