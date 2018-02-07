@@ -258,17 +258,17 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
                 DebugLog.d("whitelist：" + utils.contacts2array(whiteLists).toString());
                 //判断来电号码是否属于白名单
                 String phone = intent.getStringExtra("incoming_number");
-                boolean isContain = false;
+                boolean isWhiteList = false;
                 for (ContactListUtils.ContactBean bean: whiteLists) {
                     if (phone.equals(bean.mobile)) {
-                        isContain = true;
+                        isWhiteList = true;
                         break;
                     }
                 }
-                DebugLog.d("incall phone number:" + phone + ", is white list:" + isContain);
+                DebugLog.d("incall phone number:" + phone + ", is white list:" + isWhiteList);
                 //Toast.makeText(mContext, "Call state ringing, number:" + phone, Toast.LENGTH_LONG).show();
                 //如果来电号码不属于白名单，则拦截来电
-                if (!isContain) {
+                if (!isWhiteList) {
                     TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(context.TELEPHONY_SERVICE);
                     int state = telephonyManager.getCallState();
                     switch (state) {
@@ -340,7 +340,12 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
             mGaodeLbsUtils = new GaodeLBSUtils(this, this);
         }
         if (!TextUtils.isEmpty(mRegistrationId)) {
-            mOnOperationResultListener.onOperateReject("Client has already registed!");
+            Message message = mHandler.obtainMessage();
+            message.what = ServerConfig.REQUEST_RESULT_REGISTRATION_SUCCESS;
+            Bundle data = new Bundle();
+            data.putString("registrationId", mRegistrationId);
+            message.setData(data);
+            //mOnOperationResultListener.onOperateReject("Client has already registed!");
             return;
         }
 
@@ -367,51 +372,56 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         new StopClientTask().execute();
     }
 
+    @Override
+    public String getRegistrationId() {
+        return mRegistrationId;
+    }
+
     public void checkParams() {
         /**---------------------本地服务器设置----------------*/
-        String endpoint = "Phone-Blue-Client";
-
-        // Get server URI
-        String serverURI = "coap://10.0.2.2:5484"; //+ LwM2m.DEFAULT_COAP_PORT;
-
-        // get security info
-        byte[] pskIdentity = null;
-        byte[] pskKey = null;
-
-        // get local address
-        String localAddress = null;
-        int localPort = 0;
-
-        // get secure local address
-        String secureLocalAddress = null;
-        int secureLocalPort = 0;
-
-        Float latitude = null;
-        Float longitude = null;
-        Float scaleFactor = 1.0f;
+//        String endpoint = "Phone-Blue-Client";
+//
+//        // Get server URI
+//        String serverURI = "coap://10.0.2.2:5484"; //+ LwM2m.DEFAULT_COAP_PORT;
+//
+//        // get security info
+//        byte[] pskIdentity = null;
+//        byte[] pskKey = null;
+//
+//        // get local address
+//        String localAddress = null;
+//        int localPort = 0;
+//
+//        // get secure local address
+//        String secureLocalAddress = null;
+//        int secureLocalPort = 0;
+//
+//        Float latitude = null;
+//        Float longitude = null;
+//        Float scaleFactor = 1.0f;
 
 
         /**--------------爱立信服务器设置-------------*/
-//            String endpoint = ServerConfig.END_POINT;
-//
-//            // Get server URI
-//            String serverURI = ServerConfig.SERVER_URI;
-//
-//            // get security info
-//            byte[] pskIdentity = ServerConfig.PSK_IDENTITY.getBytes();
-//            byte[] pskKey = Hex.decodeHex(ServerConfig.PSK_KEY.toCharArray());
-//
-//            // get local address
-//            String localAddress = null;
-//            int localPort = 0;
-//
-//            // get secure local address
-//            String secureLocalAddress = null;
-//            int secureLocalPort = 0;
-//
-//            Float latitude = null;
-//            Float longitude = null;
-//            Float scaleFactor = 1.0f;
+            String endpoint = ServerConfig.END_POINT;
+
+            // Get server URI
+            String serverURI = ServerConfig.SERVER_URI;
+
+            // get security info
+            byte[] pskIdentity = ServerConfig.PSK_IDENTITY.getBytes();
+            byte[] pskKey = Hex.decodeHex(ServerConfig.PSK_KEY.toCharArray());
+
+            // get local address
+            String localAddress = null;
+            int localPort = 0;
+
+            // get secure local address
+            String secureLocalAddress = null;
+            int secureLocalPort = 0;
+
+            Float latitude = null;
+            Float longitude = null;
+            Float scaleFactor = 1.0f;
 
 
         createAndStartClient(endpoint, localAddress, localPort, secureLocalAddress, secureLocalPort, false,

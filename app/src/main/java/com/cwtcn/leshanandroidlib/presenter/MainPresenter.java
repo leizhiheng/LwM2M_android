@@ -92,6 +92,15 @@ public class MainPresenter implements IMainPresenter, OnOperationResultListener 
     }
 
     @Override
+    public void checkRegistrationId() {
+        if (mModel != null) {
+            if (TextUtils.isEmpty(mModel.getRegistrationId())) {
+                mView.updateClientStatus(true, mModel.getRegistrationId());
+            }
+        }
+    }
+
+    @Override
     public void register() {
         Intent intent = new Intent(mContext, ClientService.class);
         mContext.startService(intent);

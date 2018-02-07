@@ -258,9 +258,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
     @Override
     protected void onResume() {
         super.onResume();
-        //The call to request update for a location is not blocking, hence it wont wait there. Also the provider in emulator may not have been started.
-        //也就是说，我们一开始去获取位置的时候，Provider可能还没有被唤醒，而获取位置的方法又是非阻塞方法，所以第一次获取位置时很可能返回null。所以现在这里调用这个方法唤醒Provider.
-        LocationUtil.updateLocation(MainActivity.this);
+        mPresenter.checkRegistrationId();
     }
 
     @Override

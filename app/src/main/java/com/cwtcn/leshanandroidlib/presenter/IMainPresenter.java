@@ -12,4 +12,5 @@ public interface IMainPresenter {
     void destroyClient();
     void updateLocation();
     Bitmap encodeQRCode(String content, int width, int height);
+    void checkRegistrationId();
 }

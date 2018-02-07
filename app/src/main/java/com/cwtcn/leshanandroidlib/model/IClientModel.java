@@ -11,4 +11,5 @@ public interface IClientModel {
     void destroy();
     void updateResource(int objectId, ResourceBean bean, String newValue);
     void setOnOperationResultListener(OnOperationResultListener listener);
+    String getRegistrationId();
 }
