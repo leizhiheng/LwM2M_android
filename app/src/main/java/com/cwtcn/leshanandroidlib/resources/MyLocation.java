@@ -1,7 +1,9 @@
 package com.cwtcn.leshanandroidlib.resources;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
+import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
 import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
@@ -13,6 +15,7 @@ import org.eclipse.leshan.core.response.WriteResponse;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 public class MyLocation extends ExtendBaseInstanceEnabler {
@@ -30,7 +33,6 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
      */
     private float accuracy;
     private Date timestamp;
-    private Map<Integer, Long> observedResource = new HashMap<Integer, Long>();
 
     private CountDownLatch mCountDownLatch;
 
@@ -78,6 +80,12 @@ public class MyLocation extends ExtendBaseInstanceEnabler {
     public WriteResponse write(int resourceid, LwM2mResource value) {
         DebugLog.d("MyLocation.write resource id  = " + resourceid + ", value = " + value.toString());
         return WriteResponse.success();
+    }
+
+    @Override
+    public void notifyObserve(int resourceId) {
+        super.notifyObserve(resourceId);
+
     }
 
     @Override

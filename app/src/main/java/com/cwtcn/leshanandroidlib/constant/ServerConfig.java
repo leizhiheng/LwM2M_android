@@ -6,6 +6,7 @@ package com.cwtcn.leshanandroidlib.constant;
 
 public class ServerConfig {
 
+    public static final String KEY_IS_EABLER_OBSERVED = "has.enabler.observed";
     public static final String NOTIFY_PERIOD_PREFERENCES = "nofity.period.preferences";
 
     /**Server 配置信息*/

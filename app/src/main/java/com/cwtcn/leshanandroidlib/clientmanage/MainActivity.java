@@ -1,4 +1,4 @@
-package com.cwtcn.leshanandroidlib.view;
+package com.cwtcn.leshanandroidlib.clientmanage;
 
 import android.Manifest;
 import android.annotation.TargetApi;
@@ -11,6 +11,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,13 +27,8 @@ import android.widget.Toast;
 import com.cwtcn.leshanandroidlib.R;
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.dialog.ResourceOperateDialog;
-import com.cwtcn.leshanandroidlib.model.ResourceBean;
-import com.cwtcn.leshanandroidlib.presenter.IMainPresenter;
-import com.cwtcn.leshanandroidlib.presenter.MainPresenter;
+import com.cwtcn.leshanandroidlib.bean.ResourceBean;
 import com.cwtcn.leshanandroidlib.resources.RandomTemperatureSensor;
-import com.cwtcn.leshanandroidlib.utils.ContactListUtils;
-import com.cwtcn.leshanandroidlib.utils.DebugLog;
-import com.cwtcn.leshanandroidlib.utils.locationutils.LocationUtil;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -81,6 +77,11 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
 
         mPresenter = new MainPresenter(this, this.getApplicationContext());
 
+        if (savedInstanceState != null) {
+            String registrationId = savedInstanceState.getString("registrationId");
+            updateClientStatus(!TextUtils.isEmpty(registrationId), registrationId);
+        }
+
         encodeQRCode();
     }
 
@@ -117,14 +118,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         switch (v.getId()) {
             case R.id.start_button:
                 //注册到服务器
-                register();
+                registeButtonClicked();
                 break;
             case R.id.start_local_button:
-                register();
+
                 break;
             case R.id.stop_button:
                 //注销客户端
-                destroyClient();
+                destroyButtonClicked();
                 break;
         }
     }
@@ -144,7 +145,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
 
                 return;
             case R.id.resource_list_location:
-                updateLocation();
                 return;
             case R.id.resource_list_temperature:
                 bean = mTemperatureResources.get(position);
@@ -165,6 +165,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         }
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString("registrationId", mClientStatus.getText().toString());
+    }
+
     /**
      * 生成二维码
      */
@@ -175,33 +181,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
 //        showToast("QRCode image encode succussful ? " + (qrBm == null) + ", width = " + width);
         mImageView.setBackground(new BitmapDrawable(qrBm));
     }
-//    /**
-//     * 进入到二维码扫描界面，进行二维码扫描
-//     */
-//    private void scanQRCode() {
-//        // Open Scan Activity
-//        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-//            // Do not have the permission of camera, request it.
-//            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, REQ_CODE_PERMISSION);
-//        } else {
-//            // Have gotten the permission
-//            startCaptureActivityForResult();
-//        }
-//    }
-//
-//    private void startCaptureActivityForResult() {
-//        Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
-//        Bundle bundle = new Bundle();
-//        bundle.putBoolean(CaptureActivity.KEY_NEED_BEEP, CaptureActivity.VALUE_BEEP);
-//        bundle.putBoolean(CaptureActivity.KEY_NEED_VIBRATION, CaptureActivity.VALUE_VIBRATION);
-//        bundle.putBoolean(CaptureActivity.KEY_NEED_EXPOSURE, CaptureActivity.VALUE_NO_EXPOSURE);
-//        bundle.putByte(CaptureActivity.KEY_FLASHLIGHT_MODE, CaptureActivity.VALUE_FLASHLIGHT_OFF);
-//        bundle.putByte(CaptureActivity.KEY_ORIENTATION_MODE, CaptureActivity.VALUE_ORIENTATION_AUTO);
-//        bundle.putBoolean(CaptureActivity.KEY_SCAN_AREA_FULL_SCREEN, CaptureActivity.VALUE_SCAN_AREA_FULL_SCREEN);
-//        bundle.putBoolean(CaptureActivity.KEY_NEED_SCAN_HINT_TEXT, CaptureActivity.VALUE_SCAN_HINT_TEXT);
-//        intent.putExtra(CaptureActivity.EXTRA_SETTING_BUNDLE, bundle);
-//        startActivityForResult(intent, CaptureActivity.REQ_CODE);
-//    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -219,9 +198,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
 //            }
 //            break;
             case PERMISSIONS_REQUEST_LOCATION:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    mPresenter.updateLocation();
-                }
+//                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                    mPresenter.updateLocation();
+//                }
                 break;
             case PERMISSIONS_REQUEST_CONTACT:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -258,7 +237,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
     @Override
     protected void onResume() {
         super.onResume();
-        mPresenter.checkRegistrationId();
     }
 
     @Override
@@ -266,11 +244,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
         super.onDestroy();
     }
 
-    public void register() {
+    @Override
+    public void registeButtonClicked() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_CONTACTS, Manifest.permission.READ_CONTACTS,
-                    Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},
+                            Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},
                     PERMISSIONS_REQUEST_CONTACT);
         } else {
             mPresenter.register();
@@ -278,7 +257,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
     }
 
     @Override
-    public void destroyClient() {
+    public void destroyButtonClicked() {
         mPresenter.destroyClient();
     }
 
@@ -306,19 +285,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Adap
     public void hideProgress() {
         if (mProgressDialog != null && mProgressDialog.isShowing()) {
             mProgressDialog.dismiss();
-        }
-    }
-
-    @Override
-    public void updateLocation() {
-        DebugLog.d("updateLocation ==>");
-        //高版本的权限检查
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
-                    PERMISSIONS_REQUEST_LOCATION);
-        } else {
-            mPresenter.updateLocation();
         }
     }
 

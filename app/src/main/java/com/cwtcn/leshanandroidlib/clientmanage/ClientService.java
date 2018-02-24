@@ -1,4 +1,4 @@
-package com.cwtcn.leshanandroidlib.model;
+package com.cwtcn.leshanandroidlib.clientmanage;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
-import android.net.Network;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Binder;
@@ -22,6 +21,7 @@ import android.widget.Toast;
 
 import com.android.internal.telephony.ITelephony;
 import com.cwtcn.leshanandroidlib.constant.ServerConfig;
+import com.cwtcn.leshanandroidlib.bean.ResourceBean;
 import com.cwtcn.leshanandroidlib.resources.BatteryStatus;
 import com.cwtcn.leshanandroidlib.resources.ContactList;
 import com.cwtcn.leshanandroidlib.resources.ExtendBaseInstanceEnabler;
@@ -146,7 +146,7 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
             switch (what) {
                 case MSG_WHAT_REQUEST_LOCATION:
                     //收到消息开始定位
-                    mGaodeLbsUtils.startLoc();
+                    if(mGaodeLbsUtils != null) mGaodeLbsUtils.startLoc();
                     return true;
                 case MSG_WHAT_START_OPTERATE:
                     //Client向Server提交了一次请求
@@ -468,7 +468,6 @@ public class ClientService extends Service implements IClientModel, OnWriteReadL
         NetworkConfig coapConfig = null;
         try {
             InputStream inputStream = mContext.getResources().getAssets().open(NetworkConfig.DEFAULT_FILE_NAME);
-            System.out.println("leshan.LeshanClientDemo.createAndStartClient inputStream = " + inputStream);
             //readProperties(inputStream);
 //            System.out.println("leshan.LeshanClientDemo.createAndStartClient configFile.isFile(): " + configFile.isFile());
 //            if (configFile.isFile()) {

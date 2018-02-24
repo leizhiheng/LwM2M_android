@@ -1,8 +1,9 @@
 package com.cwtcn.leshanandroidlib.resources;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
-import com.cwtcn.leshanandroidlib.model.ClientService;
+import com.cwtcn.leshanandroidlib.constant.ServerConfig;
 import com.cwtcn.leshanandroidlib.utils.DebugLog;
 import com.cwtcn.leshanandroidlib.utils.interfaces.OnWriteReadListener;
 
@@ -12,6 +13,7 @@ import org.eclipse.leshan.core.response.WriteResponse;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Set;
 
 /**
  * Created by leizhiheng on 2018/1/18.
@@ -19,14 +21,16 @@ import java.util.HashMap;
 
 public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
 
+    public static String KEY_OBSERVED_RESOURCE_IDS = "observedResourceIds";
     protected Context mContext;
     protected int objectId;
     /*服务器observe后，Notify间隔时间*/
     protected int intervalInSec = -1;
-    protected boolean startedObseve = false;
-    protected HashMap<Integer, Long> observedResource;
+    protected boolean startedObserve = false;
+    protected HashMap<String, Long> observedResource;
 
     protected OnWriteReadListener mOnWriteReadListener;
+    protected SharedPreferences mPreference;
 
     /**
      * 当InstanceEnabler被创建时，ClientService会调用这个方法
@@ -35,6 +39,23 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
         this.mContext = context;
         this.objectId = objectId;
         this.mOnWriteReadListener = onWriteReadListener;
+        mPreference = mContext.getSharedPreferences(ServerConfig.NOTIFY_PERIOD_PREFERENCES, Context.MODE_PRIVATE);
+        observedResource = new HashMap<String, Long>();
+
+        Set<String> observedResourceIds = mPreference.getStringSet(KEY_OBSERVED_RESOURCE_IDS + objectId, null);
+        if (objectId == 6) DebugLog.d("locationobservedResourceIds size:" + ((observedResourceIds == null) ? 0 : observedResourceIds.size()));
+        if (observedResourceIds != null) {
+            DebugLog.d("observedResourceIds:" + observedResourceIds.toArray().toString());
+            long time = new Date().getTime();
+            for (String id : observedResourceIds) {
+                observedResource.put(id, time);
+            }
+            startedObserve = true;
+            intervalInSec = mOnWriteReadListener.readPeriod(objectId);
+            if (objectId == 6) DebugLog.d("locationobservedResourceIds startedObserve = " + startedObserve + ", intervalInSec :" + intervalInSec);
+            startPeriodicNotify();
+        }
+
     }
 
 
@@ -48,8 +69,9 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
     /**
      * 当ClientService定位成功后，调用该方法，定位结果发送给InstanceEnabler。
      * 具体的操作可以在子类中实现
-     * @param lat 经度
-     * @param lon 维度
+     *
+     * @param lat      经度
+     * @param lon      维度
      * @param accuracy 精度
      */
     public void setLocateResult(double lat, double lon, float accuracy) {
@@ -62,21 +84,25 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
 
     /**
      * 服务器端observe一个Resource后，就调用该方法
+     *
      * @param resourceId
      */
     @Override
     public void notifyObserve(int resourceId) {
         DebugLog.d("notifyObserve resourceId = " + resourceId);
-//        if (intervalInSec < 0) {
-//            intervalInSec = mOnWriteReadListener.readPeriod(objectId);
-//        }
-        intervalInSec = 10;
-        if (observedResource == null) {
-            startedObseve = true;
-            observedResource = new HashMap<Integer, Long>();
+        if (intervalInSec < 0) {
+            intervalInSec = mOnWriteReadListener.readPeriod(objectId);
+            if (intervalInSec < 0) {
+                intervalInSec = 10;
+            }
+        }
+        if (!startedObserve) {
+            startedObserve = true;
             startPeriodicNotify();
         }
-        observedResource.put(resourceId, getNowMilliSecs());
+        observedResource.put(resourceId + "", getNowMilliSecs());
+        mPreference.edit().putStringSet(KEY_OBSERVED_RESOURCE_IDS + objectId, observedResource.keySet()).commit();
+        DebugLog.d("observedResourceIds:" + observedResource.keySet().toArray().toString());
     }
 
     public void setObjectId(int objectId) {
@@ -91,12 +117,14 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
         DebugLog.d("setIntervalInSec intervalInSec = " + intervalInSec);
         this.intervalInSec = intervalInSec;
     }
+
     /**
      * 通过将startedObseve设置为false，来中断startPeriodicNotify()中的循环线程
+     *
      * @param startedObseve
      */
     public void setStartedObseve(boolean startedObseve) {
-        this.startedObseve = startedObseve;
+        this.startedObserve = startedObseve;
     }
 
     /**
@@ -108,7 +136,7 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                while (startedObseve) {
+                while (startedObserve) {
                     try {
                         //每一秒检查一次，距离上次Notify的时间是否已达到minPeriod
                         Thread.sleep(1000);
@@ -117,14 +145,16 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
                     }
 
                     long milliSecs = getNowMilliSecs();
-                    for (int resourceid : observedResource.keySet()) {
-//                        DebugLog.d("startPeriodicNotify resourceid = " + resourceid);
-                        if (intervalInSec * 1000 < milliSecs - observedResource.get(resourceid)) {
+                    for (String resourceid : observedResource.keySet()) {
+                        long timeDis = milliSecs - observedResource.get(resourceid);
+                        DebugLog.d("startPeriodicNotify resourceid = " + resourceid + ", timeDis = " + timeDis);
+                        if (intervalInSec * 1000 < timeDis) {
                             //在通知服务器更新Resource的值之前，如果需要做一些其他的工作，就执行beforeFireResourceChange(resourceId)方法。
                             //这个方法在不同的子类中有不同的具体实现
-                            beforeFireResourceChange(resourceid);
+                            beforeFireResourceChange(Integer.valueOf(resourceid));
                             //如果时间间隔大于minPeriod，则上报数据
-                            fireResourcesChange(resourceid);
+                            fireResourcesChange(Integer.valueOf(resourceid));
+                            DebugLog.d("startPerifireResourcesChange odicNotify resourceid = " + resourceid + ", timeDis = " + timeDis);
                             //记录本次上报时间
                             observedResource.put(resourceid, milliSecs);
                         }
@@ -136,6 +166,7 @@ public abstract class ExtendBaseInstanceEnabler extends BaseInstanceEnabler {
 
     /**
      * 如果子类在周期提交资源值之前需要做一些其他的工作，则复写这个方法。
+     *
      * @param resourceId
      */
     protected void beforeFireResourceChange(int resourceId) {

@@ -13,7 +13,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.cwtcn.leshanandroidlib.R;
-import com.cwtcn.leshanandroidlib.model.ResourceBean;
+import com.cwtcn.leshanandroidlib.bean.ResourceBean;
 
 /**
  * Created by leizhiheng on 2017/12/27.

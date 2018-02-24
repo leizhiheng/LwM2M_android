@@ -1,6 +1,5 @@
-package com.cwtcn.leshanandroidlib.presenter;
+package com.cwtcn.leshanandroidlib.clientmanage;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 
 /**
@@ -10,7 +9,6 @@ import android.graphics.Bitmap;
 public interface IMainPresenter {
     void register();
     void destroyClient();
-    void updateLocation();
     Bitmap encodeQRCode(String content, int width, int height);
     void checkRegistrationId();
 }

@@ -1,5 +1,6 @@
-package com.cwtcn.leshanandroidlib.model;
+package com.cwtcn.leshanandroidlib.clientmanage;
 
+import com.cwtcn.leshanandroidlib.bean.ResourceBean;
 import com.cwtcn.leshanandroidlib.utils.interfaces.OnOperationResultListener;
 
 /**

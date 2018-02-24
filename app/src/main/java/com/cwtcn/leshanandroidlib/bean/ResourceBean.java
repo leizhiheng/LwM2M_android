@@ -1,4 +1,4 @@
-package com.cwtcn.leshanandroidlib.model;
+package com.cwtcn.leshanandroidlib.bean;
 
 import java.io.Serializable;
 
